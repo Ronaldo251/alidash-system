@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Agente, Chamado
+from .models import Agente, Chamado, Comentario
 
 class NovoUsuarioForm(forms.ModelForm):
     # Campos extras que não estão no modelo Agente direto
@@ -48,4 +48,16 @@ class ChamadoForm(forms.ModelForm):
             'titulo': forms.TextInput(attrs={'class': 'w-full bg-dark border border-borderCol text-white p-2 rounded focus:border-neonBlue outline-none'}),
             'prioridade': forms.Select(attrs={'class': 'w-full bg-dark border border-borderCol text-white p-2 rounded focus:border-neonBlue outline-none'}),
             'descricao': forms.Textarea(attrs={'class': 'w-full bg-dark border border-borderCol text-white p-2 rounded focus:border-neonBlue outline-none', 'rows': 4}),
+        }
+
+class ComentarioForm(forms.ModelForm):
+    class Meta:
+        model = Comentario
+        fields = ['texto']
+        widgets = {
+            'texto': forms.Textarea(attrs={
+                'class': 'w-full bg-dark border border-borderCol text-white p-3 rounded focus:border-neonBlue outline-none resize-none', 
+                'rows': 3,
+                'placeholder': 'Escreva uma resposta ou atualização...'
+            }),
         }

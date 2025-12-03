@@ -13,6 +13,7 @@ urlpatterns = [
     path('meu-painel/', views.painel_agente, name='painel_agente'),
     path('chamados/', views.lista_chamados, name='lista_chamados'),
     path('chamados/novo/', views.novo_chamado, name='novo_chamado'),
+    path('chamados/<int:id>/', views.detalhe_chamado, name='detalhe_chamado'),
     
     # Nova Rota de Exportação
     path('exportar/agentes/', views.exportar_csv_agentes, name='exportar_agentes'),

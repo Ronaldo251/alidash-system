@@ -24,7 +24,11 @@
                 {% for ticket in chamados %}
                 <tr class="hover:bg-white/5 transition-colors">
                     <td class="p-4 font-mono text-xs text-gray-500">#{{ ticket.id }}</td>
-                    <td class="font-bold text-white">{{ ticket.titulo }}</td>
+                    <td class="font-bold text-white">
+                        <a href="{% url 'detalhe_chamado' ticket.id %}" class="hover:text-neonBlue transition-colors">
+                            {{ ticket.titulo }}
+                        </a>
+                    </td>
                     <td class="text-xs">{{ ticket.solicitante.username }}</td>
                     <td>
                         {% if ticket.prioridade == 'critica' %}

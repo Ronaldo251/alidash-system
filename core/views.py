@@ -1,8 +1,8 @@
 import csv
-from .forms import NovoUsuarioForm, ChamadoForm
+from .forms import NovoUsuarioForm, ChamadoForm, ComentarioForm
 from django.http import HttpResponse
 from django.shortcuts import render
-from .models import Agente, AccessPoint, SecurityLog, HistoricoOperacao, Chamado
+from .models import Agente, AccessPoint, SecurityLog, HistoricoOperacao, Chamado, Comentario
 from django.db.models import Q
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
@@ -241,3 +241,41 @@ def novo_chamado(request):
         form = ChamadoForm()
     
     return render(request, 'chamados_form.html', {'form': form})
+
+@login_required
+def detalhe_chamado(request, id):
+    # Busca o chamado (e garante que o usuário tem permissão para ver)
+    chamado = get_object_or_404(Chamado, id=id)
+    
+    # Segurança: Se não for admin E não for o dono do chamado, bloqueia
+    if not request.user.is_superuser and chamado.solicitante != request.user:
+        return redirect('lista_chamados')
+
+    # Lógica 1: Processar Novo Comentário
+    if request.method == 'POST' and 'btn_comentario' in request.POST:
+        form = ComentarioForm(request.POST)
+        if form.is_valid():
+            comentario = form.save(commit=False)
+            comentario.chamado = chamado
+            comentario.autor = request.user
+            comentario.save()
+            return redirect('detalhe_chamado', id=id)
+
+    # Lógica 2: Processar Mudança de Status (Só Admin ou Dono pode fechar?)
+    # Vamos permitir que Admin mude tudo, e usuário apenas reabra ou feche.
+    if request.method == 'POST' and 'btn_status' in request.POST:
+        novo_status = request.POST.get('novo_status')
+        if novo_status:
+            chamado.status = novo_status
+            chamado.save()
+            return redirect('detalhe_chamado', id=id)
+
+    form = ComentarioForm()
+    comentarios = chamado.comentarios.all().order_by('data')
+
+    contexto = {
+        'chamado': chamado,
+        'comentarios': comentarios,
+        'form': form
+    }
+    return render(request, 'chamado_detalhe.html', contexto)
