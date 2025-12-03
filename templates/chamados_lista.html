@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Meus Chamados{% endblock %}
+{% block content %}
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-white">Central de Chamados</h2>
+        <a href="{% url 'novo_chamado' %}" class="bg-neonBlue text-dark px-4 py-2 rounded text-xs font-bold hover:bg-white transition-colors">
+            <i class="fa-solid fa-plus mr-2"></i>Abrir Chamado
+        </a>
+    </div>
+
+    <div class="bg-card rounded-lg border border-borderCol overflow-hidden">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-[#111318] text-gray-500 text-xs uppercase">
+                <tr>
+                    <th class="p-4">ID</th>
+                    <th>Título</th>
+                    <th>Solicitante</th>
+                    <th>Prioridade</th>
+                    <th>Status</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-borderCol text-gray-300">
+                {% for ticket in chamados %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4 font-mono text-xs text-gray-500">#{{ ticket.id }}</td>
+                    <td class="font-bold text-white">{{ ticket.titulo }}</td>
+                    <td class="text-xs">{{ ticket.solicitante.username }}</td>
+                    <td>
+                        {% if ticket.prioridade == 'critica' %}
+                            <span class="text-alertRed font-bold uppercase text-[10px]"><i class="fa-solid fa-fire mr-1"></i>Crítica</span>
+                        {% else %}
+                            <span class="text-gray-400 uppercase text-[10px]">{{ ticket.get_prioridade_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="px-2 py-0.5 rounded text-[10px] border uppercase font-bold {{ ticket.cor_badge }}">
+                            {{ ticket.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="text-xs text-gray-500">{{ ticket.data_abertura|date:"d/m H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-gray-500">Nenhum chamado encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

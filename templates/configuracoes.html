@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Minha Conta{% endblock %}
+
+{% block content %}
+    <h2 class="text-xl font-bold text-white mb-6">Configurações do Sistema</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-3 rounded text-sm font-bold border 
+                {% if message.tags == 'success' %}bg-green-900/20 border-neonGreen text-neonGreen{% else %}bg-red-900/20 border-alertRed text-alertRed{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="bg-card rounded-lg border border-borderCol p-6 text-center h-fit">
+            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-neonBlue to-purple-600 mx-auto flex items-center justify-center text-3xl font-bold text-white border-4 border-[#0b0c10] shadow-lg mb-4">
+                {{ request.user.username|make_list|first|upper }}
+            </div>
+            <h3 class="text-lg font-bold text-white">{{ request.user.first_name }} {{ request.user.last_name }}</h3>
+            <p class="text-sm text-gray-500 mb-4">@{{ request.user.username }}</p>
+            
+            <div class="bg-[#0b0c10] rounded p-3 text-left space-y-2 text-xs border border-borderCol">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Cargo:</span>
+                    <span class="text-neonBlue">Administrador</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Último Login:</span>
+                    <span class="text-white">{{ request.user.last_login|date:"d/m/Y H:i" }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">ID:</span>
+                    <span class="font-mono text-gray-400">#{{ request.user.id }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="bg-card rounded-lg border border-borderCol p-6">
+                <h3 class="text-sm font-bold uppercase text-gray-400 mb-4 border-b border-borderCol pb-2">
+                    <i class="fa-solid fa-lock mr-2"></i>Segurança
+                </h3>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        {% for field in form %}
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">{{ field.label }}</label>
+                            <input type="{{ field.field.widget.input_type }}" 
+                                   name="{{ field.name }}" 
+                                   class="w-full bg-dark border border-borderCol text-white text-sm rounded p-2 focus:border-neonBlue focus:outline-none transition-colors">
+                            {% if field.errors %}
+                                <p class="text-xs text-alertRed mt-1">{{ field.errors.0 }}</p>
+                            {% endif %}
+                            {% if field.help_text %}
+                                <p class="text-[10px] text-gray-600 mt-1">{{ field.help_text }}</p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="mt-4 bg-neonBlue text-dark font-bold px-4 py-2 rounded text-xs hover:bg-[#0ea5e9] transition-colors">
+                        Atualizar Senha
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-card rounded-lg border border-borderCol p-6 opacity-75">
+                <h3 class="text-sm font-bold uppercase text-gray-400 mb-4 border-b border-borderCol pb-2">
+                    <i class="fa-solid fa-sliders mr-2"></i>Preferências do Sistema
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">Modo Escuro (Dark Mode)</span>
+                        <i class="fa-solid fa-toggle-on text-neonGreen text-xl cursor-not-allowed"></i>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">Notificações por Email</span>
+                        <i class="fa-solid fa-toggle-on text-neonGreen text-xl cursor-not-allowed"></i>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">Sons de Alerta (Siren)</span>
+                        <i class="fa-solid fa-toggle-off text-gray-600 text-xl cursor-not-allowed"></i>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Perfil: {{ agente.nome }}{% endblock %}
+
+{% block content %}
+    <a href="{% url 'callcenter' %}" class="text-gray-500 hover:text-white mb-4 inline-block text-xs uppercase tracking-wide">
+        <i class="fa-solid fa-arrow-left mr-1"></i> Voltar para Lista
+    </a>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="bg-card rounded-lg border border-borderCol p-6 flex flex-col items-center relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 {{ agente.cor_badge_css|cut:'text-'|cut:'border-' }} opacity-50"></div>
+            
+            <div class="w-32 h-32 rounded-full bg-gray-800 border-4 border-[#0b0c10] shadow-2xl flex items-center justify-center text-4xl text-gray-500 mb-4 mt-4">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            
+            <h2 class="text-2xl font-bold text-white">{{ agente.nome }}</h2>
+            <p class="text-neonBlue font-mono text-sm mb-4">Ramal: {{ agente.ramal }}</p>
+
+            <div class="px-4 py-1 rounded-full border {{ agente.cor_badge_css }} text-sm font-bold uppercase mb-6">
+                {{ agente.get_status_display }}
+            </div>
+
+            <div class="w-full space-y-2 border-t border-borderCol pt-4">
+                <p class="text-[10px] text-gray-500 uppercase font-bold text-center mb-2">Ações de Supervisão</p>
+                
+                <form method="post" class="grid grid-cols-2 gap-2">
+                    {% csrf_token %}
+                    <button type="submit" name="acao_status" value="offline" class="bg-red-900/30 text-red-400 border border-red-900/50 hover:bg-red-900/50 p-2 rounded text-xs font-bold transition-colors">
+                        <i class="fa-solid fa-power-off mr-1"></i> Deslogar
+                    </button>
+                    <button type="submit" name="acao_status" value="pausa" class="bg-yellow-900/30 text-yellow-400 border border-yellow-900/50 hover:bg-yellow-900/50 p-2 rounded text-xs font-bold transition-colors">
+                        <i class="fa-solid fa-mug-hot mr-1"></i> Forçar Pausa
+                    </button>
+                    <button type="submit" name="acao_status" value="online" class="col-span-2 bg-green-900/30 text-green-400 border border-green-900/50 hover:bg-green-900/50 p-2 rounded text-xs font-bold transition-colors">
+                        <i class="fa-solid fa-check mr-1"></i> Definir como Disponível
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div class="bg-card p-4 rounded border border-borderCol text-center">
+                    <p class="text-xs text-gray-500 uppercase">Tempo Logado</p>
+                    <p class="text-xl font-mono text-white mt-1">
+                        {% if agente.tempo_logado %}{{ agente.tempo_logado }}{% else %}--:--{% endif %}
+                    </p>
+                </div>
+                <div class="bg-card p-4 rounded border border-borderCol text-center">
+                    <p class="text-xs text-gray-500 uppercase">Atendimentos</p>
+                    <p class="text-xl font-bold text-neonBlue mt-1">{{ agente.atendimentos }}</p>
+                </div>
+                <div class="bg-card p-4 rounded border border-borderCol text-center">
+                    <p class="text-xs text-gray-500 uppercase">Nota Média</p>
+                    <p class="text-xl font-bold text-neonGreen mt-1">4.8 <span class="text-[10px] text-gray-500">/ 5.0</span></p>
+                </div>
+            </div>
+
+            <div class="bg-card rounded-lg border border-borderCol overflow-hidden">
+                <div class="p-4 border-b border-borderCol bg-[#1e212b]">
+                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-clock-rotate-left mr-2"></i>Últimas Chamadas</h3>
+                </div>
+                <table class="w-full text-left text-sm">
+                    <thead class="text-gray-500 text-xs uppercase bg-[#111318]">
+                        <tr>
+                            <th class="p-3">Horário</th>
+                            <th>Cliente / Setor</th>
+                            <th>Duração</th>
+                            <th>Resultado</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-borderCol text-gray-300">
+                        {% for chamada in historico %}
+                        <tr class="hover:bg-white/5">
+                            <td class="p-3 font-mono text-xs">{{ chamada.hora }}</td>
+                            <td>{{ chamada.cliente }}</td>
+                            <td class="font-mono text-xs">{{ chamada.duracao }}</td>
+                            <td>
+                                {% if chamada.resultado == 'Resolvido' %}
+                                    <span class="text-neonGreen text-[10px] uppercase font-bold">Resolvido</span>
+                                {% else %}
+                                    <span class="text-yellow-500 text-[10px] uppercase font-bold">{{ chamada.resultado }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

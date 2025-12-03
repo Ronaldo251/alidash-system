@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AliDash - {% block title %}Monitoramento{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0b0c10',       
+                        sidebar: '#111318',    
+                        card: '#161b22',       
+                        borderCol: '#30363d',  
+                        neonGreen: '#238636',  
+                        neonBlue: '#38bdf8',   
+                        alertRed: '#da3633',   
+                        warnYellow: '#d29922'  
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0b0c10; color: #c9d1d9; overflow: hidden; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0c10; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        .pulse-dot {
+            height: 8px; width: 8px; border-radius: 50%; display: inline-block;
+            box-shadow: 0 0 0 0 rgba(35, 134, 54, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(35, 134, 54, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(35, 134, 54, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(35, 134, 54, 0); }
+        }
+    </style>
+</head>
+<body class="flex h-screen w-full">
+
+    <aside class="w-64 bg-sidebar border-r border-borderCol flex flex-col justify-between hidden md:flex">
+        <div>
+            <div class="p-6 border-b border-borderCol">
+                <h1 class="text-2xl font-bold tracking-widest text-white">ALIDASH</h1>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-1">SYSTEMS v1.0</p>
+            </div>
+
+            <nav class="mt-6 px-4 space-y-2">
+
+                {% if request.user.is_superuser %}
+                    
+                    <p class="px-4 text-[10px] text-gray-500 uppercase font-bold mt-4 mb-2">Gestão</p>
+
+                    <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'dashboard' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-layer-group"></i> <span class="text-sm font-medium">Visão Geral</span>
+                    </a>
+                    
+                    <a href="{% url 'conectividade' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'conectividade' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-wifi"></i> <span class="text-sm font-medium">Conectividade</span>
+                    </a>
+
+                    <a href="{% url 'callcenter' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'callcenter' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-headset"></i> <span class="text-sm font-medium">Call Center</span>
+                    </a>
+
+                    <a href="{% url 'seguranca' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'seguranca' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-shield-halved"></i> <span class="text-sm font-medium">Segurança</span>
+                    </a>
+
+                    <a href="{% url 'lista_usuarios' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'lista_usuarios' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-users-gear"></i> <span class="text-sm font-medium">Usuários</span>
+                    </a>
+                    <a href="{% url 'lista_chamados' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'lista_chamados' or request.resolver_match.url_name == 'novo_chamado' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-ticket"></i> <span class="text-sm font-medium">Chamados</span>
+                    </a>
+
+                {% else %}
+
+                    <p class="px-4 text-[10px] text-gray-500 uppercase font-bold mt-4 mb-2">Operacional</p>
+
+                    <a href="{% url 'painel_agente' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'painel_agente' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-gauge-high"></i> <span class="text-sm font-medium">Meu Painel</span>
+                    </a>
+
+                    <a href="{% url 'lista_chamados' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'lista_chamados' or request.resolver_match.url_name == 'novo_chamado' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-ticket"></i> <span class="text-sm font-medium">Meus Chamados</span>
+                    </a>
+
+                    <a href="{% url 'configuracoes' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'configuracoes' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-id-card"></i> <span class="text-sm font-medium">Meu Perfil</span>
+                    </a>
+
+                {% endif %}
+
+                <div class="border-t border-borderCol my-2 mx-4 pt-2"></div>
+
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-card hover:text-red-300 rounded transition-all cursor-pointer">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span class="text-sm font-medium">Sair do Sistema</span>
+                    </button>
+                </form>
+            </nav>
+        </div>
+
+        <div class="p-4 bg-[#0d1117] border-t border-borderCol">
+            <div class="text-xs font-bold text-gray-400 mb-2 uppercase">Status do Servidor</div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="pulse-dot bg-neonGreen"></span>
+                <span class="text-xs text-neonGreen">AliDash DB: Online</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="h-16 border-b border-borderCol flex items-center justify-between px-6 bg-dark">
+            <div class="flex items-center gap-4 text-gray-400">
+                <span class="text-sm uppercase tracking-wide"><i class="fa-solid fa-server mr-2"></i>AliDash Monitor</span>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="text-right hidden sm:block">
+                    <div class="text-xs text-gray-500 uppercase">Tempo Real</div>
+                    <div class="text-sm font-mono text-neonBlue font-bold" id="clock">00:00:00</div>
+                </div>
+                <a href="{% url 'configuracoes' %}" class="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-xs text-gray-500 uppercase">Admin</div>
+                        <div class="text-sm font-bold text-white">{{ request.user.username }}</div>
+                    </div>
+                    <div class="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 border border-white/20 flex items-center justify-center text-xs text-white font-bold">
+                        {{ request.user.username|make_list|first|upper }}
+                    </div>
+                </a>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
+
+    <script>
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('pt-BR');
+        }, 1000);
+    </script>
+    
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>

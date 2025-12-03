@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AliDash - Acesso Restrito</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0b0c10',
+                        card: '#161b22',
+                        neonBlue: '#38bdf8',
+                        neonGreen: '#238636'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0b0c10; color: #c9d1d9; }
+        /* Fundo com efeito de grade sutil */
+        .bg-grid {
+            background-image: linear-gradient(rgba(48, 54, 61, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(48, 54, 61, 0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+    </style>
+</head>
+<body class="bg-grid h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-card p-8 rounded-lg shadow-2xl border border-[#30363d] relative overflow-hidden">
+        
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neonBlue to-purple-600"></div>
+
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold tracking-widest text-white">ALIDASH</h1>
+            <p class="text-xs text-neonBlue uppercase tracking-widest mt-1">System Access</p>
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+                <div class="bg-red-900/20 border border-red-500 text-red-400 text-xs p-3 rounded">
+                    <i class="fa-solid fa-triangle-exclamation mr-2"></i> Usuário ou senha incorretos.
+                </div>
+            {% endif %}
+
+            <div>
+                <label class="block text-xs uppercase text-gray-500 font-bold mb-2">Usuário</label>
+                <div class="relative">
+                    <i class="fa-solid fa-user absolute left-3 top-3 text-gray-500 text-xs"></i>
+                    <input type="text" name="username" class="w-full bg-[#0d1117] border border-[#30363d] text-white text-sm rounded py-2.5 pl-8 focus:outline-none focus:border-neonBlue transition-colors" placeholder="ID Corporativo" required autofocus>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs uppercase text-gray-500 font-bold mb-2">Senha</label>
+                <div class="relative">
+                    <i class="fa-solid fa-lock absolute left-3 top-3 text-gray-500 text-xs"></i>
+                    <input type="password" name="password" class="w-full bg-[#0d1117] border border-[#30363d] text-white text-sm rounded py-2.5 pl-8 focus:outline-none focus:border-neonBlue transition-colors" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-neonBlue text-dark font-bold py-2.5 rounded hover:bg-[#0ea5e9] transition-colors uppercase text-sm tracking-wide">
+                Entrar no Sistema
+            </button>
+        </form>
+
+        <div class="mt-8 text-center text-[10px] text-gray-600">
+            &copy; 2025 AliDash Systems. Conexão Segura.
+        </div>
+    </div>
+
+</body>
+</html>

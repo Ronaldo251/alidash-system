@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Visão Geral{% endblock %}
+
+{% block content %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-neonBlue transition-colors">
+            <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fa-solid fa-wifi text-6xl text-neonBlue"></i>
+            </div>
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Access Points</p>
+            <h3 class="text-3xl font-bold text-white mb-2">{{ total_aps }} <span class="text-sm text-gray-500 font-normal">/ 470</span></h3>
+            <div class="w-full bg-gray-800 h-1.5 rounded-full mt-2">
+                <div class="bg-neonBlue h-1.5 rounded-full" style="width: 99%"></div>
+            </div>
+        </div>
+        <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-neonGreen transition-colors">
+            <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fa-solid fa-users text-6xl text-neonGreen"></i>
+            </div>
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Agentes Online</p>
+            <h3 class="text-3xl font-bold text-white mb-2">{{ agentes_online }} <span class="text-sm text-neonGreen font-mono">▲ 12%</span></h3>
+            <div class="text-[10px] text-gray-400">
+                <span>Total Cadastrado: {{ total_agentes }}</span>
+            </div>
+        </div>
+         <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-alertRed transition-colors">
+            <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fa-solid fa-triangle-exclamation text-6xl text-alertRed"></i>
+            </div>
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Incidentes Críticos</p>
+            <h3 class="text-3xl font-bold text-alertRed mb-2">3</h3>
+        </div>
+         <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-warnYellow transition-colors">
+            <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                <i class="fa-solid fa-stopwatch text-6xl text-warnYellow"></i>
+            </div>
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1">TMA Global</p>
+            <h3 class="text-3xl font-bold text-white mb-2">05:22</h3>
+        </div>
+    </div>
+
+    <div class="bg-card rounded-lg border border-borderCol p-4 h-96">
+        <h3 class="text-sm font-bold uppercase text-gray-300 mb-4">Volume de Tráfego vs. Chamadas</h3>
+        <div class="relative w-full h-full pb-8">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    
+    // Recebendo dados do Django (Django Template Language)
+    // O filtro |safe é vital para o JS entender que é uma lista segura
+    const labels = {{ chart_labels|safe }};
+    const dataChamadas = {{ chart_chamadas|safe }};
+    const dataRede = {{ chart_rede|safe }};
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels, // Eixo X (Horários)
+            datasets: [
+                {
+                    label: 'Chamadas Ativas',
+                    data: dataChamadas, // Dados do Banco
+                    borderColor: '#a855f7', // Roxo
+                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                    yAxisID: 'y_chamadas',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Tráfego Rede (Mbps)',
+                    data: dataRede, // Dados do Banco
+                    borderColor: '#38bdf8', // Azul
+                    backgroundColor: 'rgba(56, 189, 248, 0.0)',
+                    yAxisID: 'y_rede',
+                    tension: 0.4,
+                    borderDash: [5, 5]
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: { 
+                legend: { 
+                    labels: { color: '#9ca3af' } 
+                } 
+            },
+            scales: {
+                x: { 
+                    grid: { color: '#30363d' },
+                    ticks: { color: '#6b7280' }
+                },
+                // Eixo Esquerdo (Chamadas - Roxo)
+                y_chamadas: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    grid: { color: '#30363d' },
+                    ticks: { color: '#a855f7' },
+                    title: { display: true, text: 'Chamadas', color: '#a855f7' }
+                },
+                // Eixo Direito (Rede - Azul)
+                y_rede: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false }, // Remove grades duplicadas
+                    ticks: { color: '#38bdf8' },
+                    title: { display: true, text: 'Mbps', color: '#38bdf8' }
+                }
+            }
+        }
+    });
+    setTimeout(function() {
+        window.location.reload(1);
+    }, 15000); // 15000 ms = 15 segundos
+    
+    // Mostra um contador visual no console (opcional, para debug)
+    console.log("AliDash: Próxima atualização em 15s...");
+</script>
+{% endblock %}

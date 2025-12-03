@@ -1,0 +1,102 @@
+/* static/css/alidash_admin.css - VERSÃO ALTO CONTRASTE */
+
+/* =========================================
+   1. ESTRUTURA GERAL (FUNDO PRETO)
+   ========================================= */
+body, .content-wrapper, .main-footer, .main-header {
+    background-color: #0b0c10 !important; /* Preto profundo */
+    color: #c9d1d9 !important; /* Texto cinza claro */
+}
+
+/* Sidebar (Menu Lateral) */
+.main-sidebar {
+    background-color: #0d1117 !important;
+    border-right: 1px solid #30363d;
+}
+
+/* Cards (Caixas de conteúdo) */
+.card, .info-box, .small-box {
+    background-color: #161b22 !important; /* Um pouco mais claro que o fundo */
+    border: 1px solid #30363d;
+}
+
+/* Títulos brancos para leitura fácil */
+h1, h2, h3, h4, .card-title {
+    color: #ffffff !important;
+}
+
+/* =========================================
+   2. CORREÇÃO DOS BOTÕES (CINZA + TEXTO BRANCO)
+   ========================================= */
+/* Força TODOS os botões principais a serem cinza escuro (estilo GitHub) */
+.btn-primary, .btn-success, .btn-info, .btn-secondary, .btn-warning, .btn-danger, .btn-default {
+    background-image: none !important;
+    background-color: #21262d !important; /* Cinza chumbo */
+    border: 1px solid #30363d !important; /* Borda visível */
+    color: #ffffff !important;            /* Texto BRANCO puro */
+    box-shadow: none !important;
+}
+
+/* Efeito ao passar o mouse (Hover) - Fica um pouco mais claro */
+.btn:hover {
+    background-color: #30363d !important;
+    color: #38bdf8 !important; /* Texto fica Azul Neon ao passar o mouse */
+    border-color: #8b949e !important;
+}
+
+/* Botão de "Salvar" especificamente (Destaque sutil) */
+input[type="submit"] {
+    background-color: #238636 !important; /* Verde escuro apenas para salvar */
+    color: white !important;
+    border: 1px solid rgba(240, 246, 252, 0.1) !important;
+}
+
+/* =========================================
+   3. CORREÇÃO DAS CAIXAS DE PESQUISA (INPUTS)
+   ========================================= */
+/* Fundo mais claro para destacar do fundo preto da página */
+input[type="text"], 
+input[type="password"], 
+input[type="email"], 
+input[type="number"], 
+select, 
+textarea,
+.select2-selection {
+    background-color: #21262d !important; /* Cinza claro para ver onde clica */
+    border: 1px solid #6e7681 !important; /* Borda cinza clara */
+    color: #ffffff !important;            /* Texto digitado é BRANCO */
+}
+
+/* Quando você clica para digitar (Foco) */
+input:focus, select:focus, textarea:focus {
+    background-color: #0d1117 !important; /* Escurece um pouco */
+    border-color: #38bdf8 !important;     /* Borda fica Azul Neon */
+    color: #ffffff !important;
+    box-shadow: 0 0 5px rgba(56, 189, 248, 0.5); /* Brilho azul */
+}
+
+/* Corrigindo a barra de busca específica do topo */
+.form-control-sidebar {
+    background-color: #21262d !important;
+    color: white !important;
+}
+
+/* =========================================
+   4. LINKS E TABELAS
+   ========================================= */
+a {
+    color: #58a6ff !important; /* Azul claro para links */
+}
+
+/* Linhas da tabela com separação visível */
+table.table tbody tr td {
+    border-top: 1px solid #30363d !important;
+    background-color: transparent !important;
+}
+
+/* Cabeçalho da tabela */
+table thead th {
+    background-color: #161b22 !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid #30363d !important;
+}

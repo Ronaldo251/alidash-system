@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Gestão de Usuários{% endblock %}
+{% block content %}
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-white">Gestão de Acessos</h2>
+        <a href="{% url 'criar_usuario' %}" class="bg-neonBlue text-dark px-4 py-2 rounded text-xs font-bold hover:bg-white transition-colors">
+            <i class="fa-solid fa-user-plus mr-2"></i>Novo Usuário
+        </a>
+    </div>
+
+    <div class="bg-card rounded-lg border border-borderCol overflow-hidden">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-[#111318] text-gray-500 text-xs uppercase">
+                <tr>
+                    <th class="p-4">Nome / Login</th>
+                    <th>Cargo</th>
+                    <th>Ramal</th>
+                    <th>Status Atual</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-borderCol text-gray-300">
+                {% for perfil in usuarios %}
+                <tr class="hover:bg-white/5">
+                    <td class="p-4">
+                        <div class="font-bold text-white">{{ perfil.nome }}</div>
+                        <div class="text-[10px] text-gray-500">@{{ perfil.user.username }}</div>
+                    </td>
+                    <td>
+                        {% if perfil.user.is_superuser %}
+                            <span class="text-neonBlue border border-neonBlue/30 bg-blue-900/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Admin</span>
+                        {% else %}
+                            <span class="text-gray-400 border border-gray-600 bg-gray-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Agente</span>
+                        {% endif %}
+                    </td>
+                    <td class="font-mono text-xs">{{ perfil.ramal }}</td>
+                    <td>
+                        <span class="px-2 py-0.5 rounded text-[10px] border {{ perfil.cor_badge_css }}">
+                            {{ perfil.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="text-gray-500 hover:text-white"><i class="fa-solid fa-pen-to-square"></i></button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Call Center{% endblock %}
+
+{% block content %}
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-white">Monitoramento de Agentes</h2>
+        <a href="{% url 'exportar_agentes' %}" class="bg-neonBlue/10 text-neonBlue px-4 py-2 rounded text-xs font-bold hover:bg-neonBlue/20 transition-colors flex items-center gap-2">
+            <i class="fa-solid fa-file-csv"></i> Exportar CSV
+        </a>
+    </div>
+
+    <div class="bg-card rounded-lg border border-borderCol overflow-hidden">
+        
+        <div class="p-3 border-b border-borderCol flex items-center gap-2 bg-[#1e212b]">
+            <form method="get" class="relative w-64">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-500 text-xs"></i>
+                <input type="text" 
+                       name="q" 
+                       value="{{ termo_busca }}" 
+                       placeholder="Buscar Agente ou Ramal..." 
+                       class="w-full bg-dark border border-borderCol text-gray-300 text-xs rounded pl-8 py-2 focus:outline-none focus:border-neonBlue transition-colors">
+            </form>
+            
+            {% if termo_busca %}
+                <a href="{% url 'callcenter' %}" class="text-[10px] text-red-400 hover:underline">
+                    <i class="fa-solid fa-xmark"></i> Limpar Filtro
+                </a>
+            {% endif %}
+        </div>
+
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-[#111318] text-xs uppercase text-gray-500 font-semibold">
+                <tr>
+                    <th class="p-4">Agente</th>
+                    <th>Status</th>
+                    <th>Ramal</th>
+                    <th>Tempo Logado</th>
+                    <th>Atendidas</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm text-gray-300 divide-y divide-borderCol">
+                {% for agente in agentes %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="p-4">
+                        <a href="{% url 'detalhe_agente' agente.id %}" class="font-bold text-white hover:text-neonBlue transition-colors flex items-center gap-2 group">
+                            {{ agente.nome }}
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-neonBlue"></i>
+                        </a>
+                    </td>
+                    
+                    <td>
+                        <span class="px-2 py-1 rounded text-[10px] border {{ agente.cor_badge_css }}">
+                            {{ agente.get_status_display }}
+                        </span>
+                    </td>
+                    
+                    <td class="font-mono text-xs">{{ agente.ramal }}</td>
+                    
+                    <td class="font-mono text-xs">
+                        {% if agente.tempo_logado %}
+                            {{ agente.tempo_logado }}
+                        {% else %}
+                            --:--:--
+                        {% endif %}
+                    </td>
+                    
+                    <td class="font-bold text-center">{{ agente.atendimentos }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="p-8 text-center text-gray-500">
+                        Nenhum agente encontrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}

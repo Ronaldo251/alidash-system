@@ -1,0 +1,22 @@
+# .gitignore
+
+# Arquivos compilados do Python (lixo)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Banco de Dados Local (Não sobe para produção)
+db.sqlite3
+
+# Arquivos de ambiente e variáveis locais
+.env
+.venv
+env/
+venv/
+
+# Pastas de mídia (uploads de usuários não vão pro git)
+media/
+staticfiles/
+
+# Logs e arquivos do sistema
+.DS_Store

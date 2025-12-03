@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Conectividade{% endblock %}
+
+{% block content %}
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-xl font-bold text-white">Status da Infraestrutura</h2>
+            <div class="flex gap-2 text-[10px] mt-1">
+                <a href="{% url 'conectividade' %}" class="text-gray-400 hover:text-white border-b border-transparent hover:border-white transition-all">Todos</a>
+                <span class="text-gray-600">|</span>
+                <a href="?status=online" class="text-neonGreen hover:text-white">Ver Online</a>
+                <span class="text-gray-600">|</span>
+                <a href="?status=offline" class="text-alertRed hover:text-white">Ver Offline</a>
+            </div>
+        </div>
+        
+        <div class="flex gap-2">
+            <a href="?status=online" class="cursor-pointer bg-card px-3 py-1 rounded text-xs text-neonGreen border border-neonGreen/30 shadow-lg shadow-green-900/20 hover:bg-green-900/10 transition-colors">
+                <i class="fa-solid fa-check-circle mr-1"></i> {{ online_count }} Online
+            </a>
+            <a href="?status=offline" class="cursor-pointer bg-card px-3 py-1 rounded text-xs text-alertRed border border-alertRed/30 shadow-lg shadow-red-900/20 hover:bg-red-900/10 transition-colors">
+                <i class="fa-solid fa-triangle-exclamation mr-1"></i> {{ offline_count }} Offline
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for ap in aps %}
+        <div class="bg-card p-4 rounded-lg border border-borderCol hover:border-gray-500 transition-all group relative overflow-hidden">
+            
+            <div class="absolute left-0 top-0 bottom-0 w-1 {% if ap.status == 'online' %}bg-neonGreen{% elif ap.status == 'offline' %}bg-alertRed{% else %}bg-warnYellow{% endif %}"></div>
+
+            <div class="pl-2">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-sm text-white">{{ ap.nome }}</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-wider">{{ ap.localizacao }}</p>
+                    </div>
+                    <span class="text-[10px] px-2 py-0.5 rounded border font-bold uppercase {{ ap.cor_status }}">
+                        {{ ap.get_status_display }}
+                    </span>
+                </div>
+
+                <div class="flex justify-between text-[11px] text-gray-400 mb-4 bg-dark/50 p-2 rounded">
+                    <div class="flex items-center gap-1">
+                        <i class="fa-solid fa-users text-blue-400"></i>
+                        <span><b class="text-white">{{ ap.usuarios_conectados }}</b> Users</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <i class="fa-solid fa-network-wired text-gray-500"></i>
+                        <span class="font-mono">{{ ap.ip_address }}</span>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2 text-[10px]">
+                        <span class="w-8 text-gray-500 font-bold">CPU</span>
+                        <div class="flex-1 bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="{{ ap.cor_barra_cpu }} h-full transition-all duration-1000" style="width: {{ ap.cpu_usage }}%"></div>
+                        </div>
+                        <span class="w-8 text-right text-white">{{ ap.cpu_usage }}%</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 text-[10px]">
+                        <span class="w-8 text-gray-500 font-bold">MEM</span>
+                        <div class="flex-1 bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-purple-500 h-full transition-all duration-1000" style="width: {{ ap.memory_usage }}%"></div>
+                        </div>
+                        <span class="w-8 text-right text-white">{{ ap.memory_usage }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-3 text-center py-12 text-gray-500 border border-dashed border-gray-700 rounded">
+            <i class="fa-solid fa-wifi text-4xl mb-2 opacity-20"></i>
+            <p>Nenhum Access Point cadastrado.</p>
+            <p class="text-xs">Acesse o Admin para adicionar equipamentos.</p>
+        </div>
+        {% endfor %}
+    </div>
+{% endblock %}  
