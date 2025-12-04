@@ -279,3 +279,6 @@ def detalhe_chamado(request, id):
         'form': form
     }
     return render(request, 'chamado_detalhe.html', contexto)
+
+def teste_widget(request):
+    return render(request, 'widget_demo.html')

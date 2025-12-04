@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
 
 class Agente(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -102,7 +103,17 @@ class HistoricoOperacao(models.Model):
 
     def __str__(self):
         return f"{self.data_hora.strftime('%d/%m %H:%M')} - {self.chamadas_ativas} Calls"
+
+class Cliente(models.Model):
+    nome = models.CharField(max_length=100)
+    cpf = models.CharField(max_length=14, unique=True) # Vamos usar como chave de busca
+    telefone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    empresa = models.CharField(max_length=100, blank=True)
     
+    def __str__(self):
+        return f"{self.nome} ({self.empresa})"
+        
 class Chamado(models.Model):
     PRIORIDADE_CHOICES = [
         ('baixa', 'Baixa'),
@@ -117,11 +128,23 @@ class Chamado(models.Model):
         ('concluido', 'Concluído'),
     ]
 
+    ORIGEM_CHOICES = [
+        ('interno', 'Painel Interno'),
+        ('whatsapp', 'WhatsApp Bot'),
+        ('site', 'Widget do Site'),
+    ]
+
     titulo = models.CharField(max_length=100)
     descricao = models.TextField(verbose_name="Descrição Detalhada")
     
     # Quem pediu? (Geralmente o Agente)
-    solicitante = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chamados_abertos')
+    solicitante = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    
+    # NOVO: Vínculo com Cliente Externo
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
+    
+    # NOVO: Saber de onde veio
+    origem = models.CharField(max_length=10, choices=ORIGEM_CHOICES, default='interno')
     
     # Quem vai resolver? (Pode ser nulo no começo)
     atribuido_a = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='chamados_atribuidos')
@@ -140,10 +163,15 @@ class Chamado(models.Model):
         if self.status == 'aberto': return 'bg-red-900/30 text-alertRed border-red-800'
         if self.status == 'andamento': return 'bg-yellow-900/30 text-warnYellow border-yellow-800'
         return 'bg-green-900/30 text-neonGreen border-green-800'
+    @property
+    def icone_origem(self):
+        if self.origem == 'whatsapp': return 'fa-whatsapp text-green-500'
+        if self.origem == 'site': return 'fa-globe text-blue-400'
+        return 'fa-user text-gray-400'
     
 class Comentario(models.Model):
     chamado = models.ForeignKey(Chamado, on_delete=models.CASCADE, related_name='comentarios')
-    autor = models.ForeignKey(User, on_delete=models.CASCADE)
+    autor = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     texto = models.TextField()
     data = models.DateTimeField(auto_now_add=True)
 

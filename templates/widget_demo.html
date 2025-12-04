@@ -1,0 +1,161 @@
+<style>
+    /* Estilos do Chat */
+    .ad-hidden { display: none !important; }
+    .ad-bubble { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
+    .ad-agent { background: #1f2937; color: #fff; border-top-left-radius: 0; align-self: flex-start; border: 1px solid #374151; }
+    .ad-client { background: #0ea5e9; color: #fff; border-top-right-radius: 0; align-self: flex-end; }
+    .ad-info { font-size: 10px; color: #6b7280; text-align: center; margin: 5px 0; }
+</style>
+
+<div id="alidash-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-family: 'Segoe UI', sans-serif;">
+    
+    <button onclick="toggleChat()" style="width: 60px; height: 60px; border-radius: 50%; background: #38bdf8; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+    </button>
+
+    <div id="ad-window" class="ad-hidden" style="position: absolute; bottom: 80px; right: 0; width: 320px; height: 450px; background: #0b0c10; border: 1px solid #30363d; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        
+        <div style="background: #161b22; padding: 15px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="margin: 0; color: white; font-size: 14px; font-weight: bold;">Suporte Online</h3>
+                <p id="ad-status-text" style="margin: 0; font-size: 11px; color: #38bdf8;">Preencha para iniciar</p>
+            </div>
+            <button onclick="toggleChat()" style="background: none; border: none; color: #6b7280; cursor: pointer;">✕</button>
+        </div>
+
+        <div id="ad-form-screen" style="padding: 20px; flex: 1;">
+            <p style="color: #9ca3af; font-size: 13px; margin-bottom: 15px;">Bem-vindo! Identifique-se para falar com um atendente.</p>
+            <input type="text" id="ad-nome" placeholder="Seu Nome" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box;">
+            <input type="text" id="ad-cpf" placeholder="Seu CPF (apenas números)" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box;">
+            <textarea id="ad-msg-inicial" rows="3" placeholder="Como podemos ajudar?" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box; resize: none;"></textarea>
+            <button onclick="iniciarAtendimento()" id="ad-btn-start" style="width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Iniciar Chat</button>
+        </div>
+
+        <div id="ad-chat-screen" class="ad-hidden" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+            <div id="ad-messages" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 5px;">
+                </div>
+            
+            <div style="padding: 10px; background: #161b22; border-top: 1px solid #30363d; display: flex; gap: 10px;">
+                <input type="text" id="ad-input-msg" placeholder="Digite sua mensagem..." style="flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 8px; border-radius: 20px; outline: none;">
+                <button onclick="enviarMensagem()" style="background: #38bdf8; color: #0b0c10; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold;">➤</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Variáveis de Estado
+    let currentChamadoId = null;
+    let currentCPF = null;
+    let chatInterval = null;
+
+    function toggleChat() {
+        const win = document.getElementById('ad-window');
+        win.classList.toggle('ad-hidden');
+    }
+
+    // 1. Cria o Chamado Inicial
+    async function iniciarAtendimento() {
+        const nome = document.getElementById('ad-nome').value;
+        const cpf = document.getElementById('ad-cpf').value;
+        const msg = document.getElementById('ad-msg-inicial').value;
+        const btn = document.getElementById('ad-btn-start');
+
+        if(!cpf || !msg) return alert("CPF e Mensagem são obrigatórios");
+
+        btn.innerText = "Conectando...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/abrir-chamado/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ nome, cpf, mensagem: msg, origem: 'site' })
+            });
+            const data = await response.json();
+
+            if(data.sucesso) {
+                // Sucesso! Muda para tela de chat
+                currentChamadoId = data.chamado_id;
+                currentCPF = cpf;
+                
+                document.getElementById('ad-form-screen').classList.add('ad-hidden');
+                document.getElementById('ad-chat-screen').classList.remove('ad-hidden');
+                document.getElementById('ad-status-text').innerText = `Chamado #${currentChamadoId}`;
+
+                // Adiciona msg inicial no visual
+                addMessageToScreen(msg, false, 'Agora');
+                
+                // Começa a verificar novas mensagens a cada 3s
+                startPolling();
+            } else {
+                alert("Erro: " + data.erro);
+                btn.disabled = false;
+            }
+        } catch(e) {
+            console.error(e);
+            alert("Erro de conexão");
+            btn.disabled = false;
+        }
+    }
+
+    // 2. Loop que busca mensagens novas (Polling)
+    function startPolling() {
+        chatInterval = setInterval(async () => {
+            if(!currentChamadoId) return;
+
+            const res = await fetch(`/api/chat/${currentChamadoId}/mensagens/?cpf=${currentCPF}`);
+            const data = await res.json();
+            
+            // Limpa e redesenha (simples para garantir ordem)
+            const chatBox = document.getElementById('ad-messages');
+            chatBox.innerHTML = ''; 
+
+            // Reconstrói histórico
+            data.mensagens.forEach(m => {
+                addMessageToScreen(m.texto, m.eh_agente, m.data);
+            });
+            
+            // Auto scroll
+            // chatBox.scrollTop = chatBox.scrollHeight; 
+        }, 3000); // 3 segundos
+    }
+
+    // 3. Envia nova mensagem do cliente
+    async function enviarMensagem() {
+        const input = document.getElementById('ad-input-msg');
+        const texto = input.value;
+        if(!texto) return;
+
+        input.value = ''; // Limpa input
+        
+        // Mostra visualmente na hora (otimismo)
+        // addMessageToScreen(texto, false, 'Enviando...');
+
+        await fetch(`/api/chat/${currentChamadoId}/enviar/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ cpf: currentCPF, mensagem: texto })
+        });
+        
+        // O Polling vai trazer a msg confirmada depois de 3s, ou podemos forçar update aqui
+    }
+
+    // Auxiliar Visual
+    function addMessageToScreen(texto, ehAgente, hora) {
+        const chatBox = document.getElementById('ad-messages');
+        const div = document.createElement('div');
+        
+        if (ehAgente) {
+            div.className = 'ad-bubble ad-agent';
+            div.innerHTML = `<strong>Agente:</strong><br>${texto} <span style="font-size:9px; opacity:0.7; float:right; margin-top:5px; margin-left:5px;">${hora}</span>`;
+        } else {
+            div.className = 'ad-bubble ad-client';
+            div.innerHTML = `${texto} <span style="font-size:9px; opacity:0.7; float:right; margin-top:5px; margin-left:5px;">${hora}</span>`;
+        }
+        
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>

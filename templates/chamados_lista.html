@@ -29,7 +29,22 @@
                             {{ ticket.titulo }}
                         </a>
                     </td>
-                    <td class="text-xs">{{ ticket.solicitante.username }}</td>
+                    <td class="text-xs">
+                        {% if ticket.cliente %}
+                            <div class="flex items-center gap-2">
+                                <i class="fa-brands {{ ticket.icone_origem }} text-sm"></i>
+                                <div>
+                                    <div class="font-bold text-white">{{ ticket.cliente.nome }}</div>
+                                    <div class="text-[9px] text-gray-500">{{ ticket.cliente.cpf }}</div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-headset text-gray-500"></i>
+                                <span class="text-gray-400">{{ ticket.solicitante.username }}</span>
+                            </div>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if ticket.prioridade == 'critica' %}
                             <span class="text-alertRed font-bold uppercase text-[10px]"><i class="fa-solid fa-fire mr-1"></i>Crítica</span>

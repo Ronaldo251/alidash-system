@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, api
 
 urlpatterns = [
     path('', views.home, name='dashboard'),
@@ -17,4 +17,10 @@ urlpatterns = [
     
     # Nova Rota de Exportação
     path('exportar/agentes/', views.exportar_csv_agentes, name='exportar_agentes'),
+
+    # API ENDPOINTS (Públicos)
+    path('api/abrir-chamado/', api.abrir_chamado_externo, name='api_abrir_chamado'),
+    path('teste-widget/', views.teste_widget),
+    path('api/chat/<int:chamado_id>/mensagens/', api.verificar_mensagens),
+    path('api/chat/<int:chamado_id>/enviar/', api.enviar_mensagem_externa),
 ]
