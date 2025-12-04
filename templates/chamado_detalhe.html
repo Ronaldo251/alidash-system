@@ -61,7 +61,7 @@
 
         <div class="lg:col-span-2 flex flex-col h-[600px] bg-card border border-borderCol rounded-lg overflow-hidden">
             
-            <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-[#0d1117]">
+            <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-6 bg-[#0d1117]">
                 
                 <div class="text-center">
                     <span class="text-[10px] text-gray-600 bg-card px-3 py-1 rounded-full border border-borderCol">
@@ -117,7 +117,85 @@
     </div>
     
     <script>
-        const chatContainer = document.querySelector('.overflow-y-auto');
+        // 1. Scroll Automático para o fim ao carregar
+        const chatContainer = document.getElementById('chat-container');
         chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        // 2. ID do Chamado (Pego do Django)
+        const chamadoId = "{{ chamado.id }}";
+        const usuarioLogado = "{{ request.user.username }}"; // Para saber qual lado pintar o balão
+
+        // 3. Função de Atualização (Polling)
+        function atualizarChat() {
+            // Chama a API (sem CPF, pois o agente está logado via cookie)
+            fetch(`/api/chat/${chamadoId}/mensagens/`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('chat-container');
+                    
+                    // Limpa o container para redesenhar (jeito simples para garantir ordem)
+                    container.innerHTML = '';
+
+                    if (data.mensagens.length === 0) {
+                        container.innerHTML = `<div class="text-center py-10 opacity-30"><p class="text-sm">Nenhuma interação ainda.</p></div>`;
+                        return;
+                    }
+
+                    // Renderiza cada mensagem
+                    data.mensagens.forEach(msg => {
+                        // Lógica visual: Se eu sou o autor (msg.eh_agente e nome bate?), ou apenas "eh_agente" vs "cliente"
+                        // Vamos simplificar: Se msg.eh_agente == true, é azul escuro (Interno). Se false, é Cliente (Cinza).
+                        
+                        // Mas espere! Se EU sou o agente, minha msg deve ficar na direita (azul).
+                        // Se o OUTRO agente falou, esquerda. Se o CLIENTE falou, esquerda.
+                        
+                        // Ajuste visual para o Agente:
+                        // Minhas mensagens (Agente Logado) -> Direita
+                        // Mensagens do Cliente -> Esquerda
+                        
+                        const souEu = (msg.autor === usuarioLogado);
+                        const ehCliente = !msg.eh_agente;
+
+                        let alinhamento = souEu ? 'items-end' : 'items-start';
+                        let corFundo = '';
+                        let borda = '';
+
+                        if (souEu) {
+                            // Minha msg (Agente Logado)
+                            corFundo = 'bg-blue-900/20 text-white rounded-tr-none';
+                            borda = 'border border-blue-900/50';
+                        } else if (ehCliente) {
+                            // Cliente Externo
+                            corFundo = 'bg-slate-700 text-white rounded-tl-none'; // Cor diferente para cliente
+                            borda = 'border border-slate-600';
+                        } else {
+                            // Outro Agente/Admin
+                            corFundo = 'bg-[#161b22] text-gray-300 rounded-tl-none';
+                            borda = 'border border-borderCol';
+                        }
+
+                        const htmlMsg = `
+                            <div class="flex flex-col ${alinhamento}">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs font-bold ${ehCliente ? 'text-neonBlue' : 'text-gray-400'}">
+                                        ${msg.autor}
+                                    </span>
+                                    <span class="text-[10px] text-gray-600">${msg.data}</span>
+                                </div>
+                                <div class="max-w-[80%] p-3 rounded-lg text-sm ${corFundo} ${borda}">
+                                    ${msg.texto.replace(/\n/g, '<br>')}
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += htmlMsg;
+                    });
+                })
+                .catch(err => console.error("Erro no chat:", err));
+        }
+
+        // 4. Inicia o loop a cada 3 segundos
+        // Mas só se o chamado não estiver concluído (opcional, para economizar recurso)
+        setInterval(atualizarChat, 3000);
+
     </script>
 {% endblock %}
