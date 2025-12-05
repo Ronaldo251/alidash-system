@@ -40,16 +40,16 @@
 
 Siga os passos abaixo para rodar o projeto localmente.
 
-## 1. Pré-requisitos
+### 1. Pré-requisitos
 Certifique-se de ter o **Python** e o **Git** instalados em sua máquina.
 
-## 2. Clonar o Repositório
+### 2. Clonar o Repositório
 ```bash
-git clone [https://github.com/SEU_USUARIO/alidash-system.git](https://github.com/SEU_USUARIO/alidash-system.git)
+git clone https://github.com/ronaldo251/alidash-system.git
 cd alidash-system
 ```
 
-## 3. Criar Ambiente Virtual
+### 3. Criar Ambiente Virtual
 Recomendado para isolar as dependências.
 
 **Windows:**
@@ -60,39 +60,39 @@ venv\Scripts\activate
 Linux/Mac:Bashpython3 -m venv venv
 source venv/bin/activate
 ```
-## 4. Instalar Dependências
+### 4. Instalar Dependências
 ```bash
 pip install -r requirements.txt
 ```
-## 5. Configurar Banco de Dados
+### 5. Configurar Banco de Dados
 Crie as tabelas iniciais do sistema.
 ```bash
 python manage.py migrate
 ```
-## 6. Criar Superusuário (Admin)
+### 6. Criar Superusuário (Admin)
 ```bash
 python manage.py createsuperuser
 ```
-# Siga as instruções para definir usuário e senha
-## 7. Iniciar o Servidor
+## Siga as instruções para definir usuário e senha
+### 7. Iniciar o Servidor
 ```bash
 python manage.py runserver
 ```
 O sistema estará acessível em: http://127.0.0.1:8000/
 # 🚀 Como Utilizar
 ## 👨‍💻 Acesso Admin
-- 1.Acesse http://127.0.0.1:8000/admin/ ou faça login na Home.
-- 2.Utilize as credenciais criadas no passo 6.
-- 3.Cadastre novos agentes na aba Gestão > Usuários > Novo Colaborador.
+- Acesse http://127.0.0.1:8000/admin/ ou faça login na Home.
+- Utilize as credenciais criadas no passo 6.
+- Cadastre novos agentes na aba Gestão > Usuários > Novo Colaborador.
 ### 🧩 Simulando um Cliente (Widget)
 Para testar o chat como se fosse um cliente final:
-1. Acesse http://127.0.0.1:8000/teste-widget/ em uma aba anônima.
-2. Clique no botão flutuante azul.
-3. Selecione o departamento, preencha os dados (CPF válido necessário) e inicie o chat.
+- Acesse http://127.0.0.1:8000/teste-widget/ em uma aba anônima.
+- Clique no botão flutuante azul.
+- Selecione o departamento, preencha os dados (CPF válido necessário) e inicie o chat.
 ### 🎧 Acesso do Agente
-Crie um usuário no painel Admin com o tipo "Agente Operacional".
-Faça login com este usuário em http://127.0.0.1:8000/login/.
-Você será redirecionado para o "Meu Painel" e verá os chamados na aba "Meus Chamados".
+- Crie um usuário no painel Admin com o tipo "Agente Operacional".
+- Faça login com este usuário em http://127.0.0.1:8000/login/.
+- Você será redirecionado para o "Meu Painel" e verá os chamados na aba "Meus Chamados".
 ### 🔌 Documentação da API
 O sistema possui endpoints públicos para integração com Bots (WhatsApp/Telegram) e Sites.
 
