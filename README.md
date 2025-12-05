@@ -53,11 +53,13 @@ cd alidash-system
 Recomendado para isolar as dependências.
 
 **Windows:**
-```bash
+```Bash
 python -m venv venv
-venv\Scripts\activate3. Criar Ambiente VirtualRecomendado para isolar as dependências.Windows:Bashpython -m venv venv
 venv\Scripts\activate
-Linux/Mac:Bashpython3 -m venv venv
+```
+**Linux/Mac:**
+```Bash
+python3 -m venv venv
 source venv/bin/activate
 ```
 ### 4. Instalar Dependências
