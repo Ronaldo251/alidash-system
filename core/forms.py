@@ -30,6 +30,8 @@ class NovoUsuarioForm(forms.ModelForm):
         }
 
     def save(self, commit=True):
+        # 1. Cria o Usuário
+        # (Neste momento, o SIGNAL dispara e cria um Agente vazio no banco automaticamente)
         user = User.objects.create_user(
             username=self.cleaned_data['username'],
             password=self.cleaned_data['password'],
@@ -43,11 +45,24 @@ class NovoUsuarioForm(forms.ModelForm):
             user.is_superuser = True
         user.save()
 
-        agente = super().save(commit=False)
-        agente.user = user
-        if commit:
-            agente.save()
+        # 2. ATUALIZA O AGENTE EXISTENTE
+        # Em vez de criar um novo (super().save), pegamos o que o Signal criou
+        if hasattr(user, 'agente'):
+            agente = user.agente
+            agente.nome = self.cleaned_data['nome']
+            agente.ramal = self.cleaned_data['ramal']
+            agente.departamento = self.cleaned_data['departamento']
+            if commit:
+                agente.save()
+        else:
+            # Fallback: Se por algum motivo o signal falhar, criamos manualmente
+            agente = super().save(commit=False)
+            agente.user = user
+            if commit:
+                agente.save()
+                
         return agente
+    
 class ChamadoForm(forms.ModelForm):
     class Meta:
         model = Chamado
