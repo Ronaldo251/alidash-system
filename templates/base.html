@@ -82,6 +82,9 @@
                     <a href="{% url 'lista_chamados' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'lista_chamados' or request.resolver_match.url_name == 'novo_chamado' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
                         <i class="fa-solid fa-ticket"></i> <span class="text-sm font-medium">Chamados</span>
                     </a>
+                    <a href="{% url 'historico_chamados' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'historico_chamados' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
+                        <i class="fa-solid fa-clock-rotate-left"></i> <span class="text-sm font-medium">Histórico</span>
+                    </a>
 
                 {% else %}
 
@@ -94,7 +97,15 @@
                     <a href="{% url 'lista_chamados' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'lista_chamados' or request.resolver_match.url_name == 'novo_chamado' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
                         <i class="fa-solid fa-ticket"></i> <span class="text-sm font-medium">Meus Chamados</span>
                     </a>
-
+                    <div class="relative mr-4">
+                        <button id="btn-notificacao" class="text-gray-400 hover:text-white transition-colors relative">
+                            <i class="fa-solid fa-bell text-xl"></i>
+                            
+                            <span id="badge-notificacao" class="hidden absolute -top-1 -right-1 h-4 w-4 bg-alertRed rounded-full text-[10px] font-bold flex items-center justify-center text-white border border-dark">
+                                0
+                            </span>
+                        </button>
+                    </div>
                     <a href="{% url 'configuracoes' %}" class="flex items-center gap-3 px-4 py-3 rounded transition-all {% if request.resolver_match.url_name == 'configuracoes' %}bg-card text-white border-l-4 border-neonBlue{% else %}text-gray-400 hover:bg-card hover:text-white{% endif %}">
                         <i class="fa-solid fa-id-card"></i> <span class="text-sm font-medium">Meu Perfil</span>
                     </a>
@@ -126,14 +137,37 @@
             <div class="flex items-center gap-4 text-gray-400">
                 <span class="text-sm uppercase tracking-wide"><i class="fa-solid fa-server mr-2"></i>AliDash Monitor</span>
             </div>
+            
             <div class="flex items-center gap-6">
                 <div class="text-right hidden sm:block">
                     <div class="text-xs text-gray-500 uppercase">Tempo Real</div>
                     <div class="text-sm font-mono text-neonBlue font-bold" id="clock">00:00:00</div>
                 </div>
+
+                <div class="relative">
+                    <button id="btn-notificacao" class="text-gray-400 hover:text-white transition-colors relative mt-1">
+                        <i class="fa-solid fa-bell text-xl"></i>
+                        
+                        <span id="badge-notificacao" class="hidden absolute -top-1 -right-1 h-4 w-4 bg-alertRed rounded-full text-[10px] font-bold flex items-center justify-center text-white border border-dark">
+                            0
+                        </span>
+                    </button>
+
+                    <div id="dropdown-notificacao" class="hidden absolute right-0 mt-2 w-64 bg-card border border-borderCol rounded-lg shadow-xl z-50 overflow-hidden">
+                        <div class="p-3 border-b border-borderCol bg-[#161b22] flex justify-between items-center">
+                            <span class="text-xs font-bold text-white uppercase">Notificações</span>
+                            <button onclick="limparNotificacoes()" class="text-[10px] text-neonBlue hover:underline">Limpar</button>
+                        </div>
+                        <div id="lista-notificacoes" class="max-h-60 overflow-y-auto">
+                            
+                        </div>
+                    </div>
+                </div>
                 <a href="{% url 'configuracoes' %}" class="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
                     <div class="text-right hidden sm:block">
-                        <div class="text-xs text-gray-500 uppercase">Admin</div>
+                        <div class="text-xs text-gray-500 uppercase">
+                            {% if request.user.is_superuser %}Admin{% else %}Agente{% endif %}
+                        </div>
                         <div class="text-sm font-bold text-white">{{ request.user.username }}</div>
                     </div>
                     <div class="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 border border-white/20 flex items-center justify-center text-xs text-white font-bold">
@@ -154,6 +188,95 @@
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleTimeString('pt-BR');
         }, 1000);
+
+        // Verifica notificações a cada 5 segundos
+        function verificarNotificacoes() {
+            fetch('/api/notificacoes/checar/')
+                .then(res => {
+                    if (!res.ok) { throw new Error("Erro na rede: " + res.status); }
+                    return res.json();
+                })
+                .then(data => {
+                    // 1. Atualiza a Bolinha (Badge)
+                    const badge = document.getElementById('badge-notificacao');
+                    const lista = document.getElementById('lista-notificacoes');
+                    
+                    if (data.count > 0) {
+                        badge.innerText = data.count > 9 ? '9+' : data.count;
+                        badge.classList.remove('hidden');
+                        badge.classList.add('flex');
+                        
+                        // 2. Desenha a Lista de Notificações
+                        lista.innerHTML = ''; // Limpa lista antiga
+                        
+                        data.itens.forEach(item => {
+                            // Define ícone baseado no título
+                            let icone = '<i class="fa-solid fa-info-circle text-gray-400"></i>';
+                            if(item.titulo.includes('Chamado')) icone = '<i class="fa-solid fa-ticket text-neonBlue"></i>';
+                            if(item.titulo.includes('Mensagem')) icone = '<i class="fa-solid fa-comment-dots text-green-400"></i>';
+
+                            const htmlItem = `
+                                <a href="${item.link}" class="block p-3 hover:bg-white/5 border-b border-borderCol/50 transition-colors group">
+                                    <div class="flex justify-between items-start mb-1">
+                                        <span class="text-xs font-bold text-white flex items-center gap-2">
+                                            ${icone} ${item.titulo}
+                                        </span>
+                                        <span class="text-[9px] text-gray-500">${item.tempo}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-400 line-clamp-2 group-hover:text-gray-300">
+                                        ${item.mensagem}
+                                    </p>
+                                </a>
+                            `;
+                            lista.innerHTML += htmlItem;
+                        });
+
+                        // Se tiver mais de 5, avisa
+                        if (data.count > 5) {
+                            lista.innerHTML += `
+                                <div class="p-2 text-center text-[10px] text-gray-500">
+                                    + ${data.count - 5} outras notificações
+                                </div>
+                            `;
+                        }
+
+                    } else {
+                        // Sem notificações
+                        badge.classList.add('hidden');
+                        badge.classList.remove('flex');
+                        lista.innerHTML = `
+                            <div class="p-4 text-center text-gray-500 opacity-50">
+                                <i class="fa-regular fa-bell-slash text-2xl mb-2"></i>
+                                <p class="text-xs">Tudo limpo por aqui!</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(err => console.error('Erro ao buscar notificações:', err));
+        }
+
+        // Ao clicar no sino
+        const btnNotif = document.getElementById('btn-notificacao');
+        const dropdown = document.getElementById('dropdown-notificacao');
+        
+        if(btnNotif){
+            btnNotif.addEventListener('click', () => {
+                dropdown.classList.toggle('hidden');
+            });
+        }
+
+        // Limpar
+        function limparNotificacoes() {
+            fetch('/api/notificacoes/limpar/', { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} })
+                .then(() => {
+                    document.getElementById('badge-notificacao').classList.add('hidden');
+                    dropdown.classList.add('hidden');
+                });
+        }
+
+        // Inicia o loop (Polling)
+        setInterval(verificarNotificacoes, 5000);
+        verificarNotificacoes(); // Roda uma vez ao carregar
     </script>
     
     {% block scripts %}

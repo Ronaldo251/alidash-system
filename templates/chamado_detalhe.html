@@ -43,20 +43,81 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        <div class="bg-card border border-borderCol rounded-lg p-6 h-fit">
-            <h3 class="text-xs font-bold text-gray-500 uppercase mb-4 border-b border-borderCol pb-2">Detalhes da Solicitação</h3>
+        <div class="space-y-4"> 
             
-            <div class="mb-4">
-                <p class="text-[10px] text-gray-500 uppercase">Prioridade</p>
-                <p class="text-white font-bold">{{ chamado.get_prioridade_display }}</p>
-            </div>
-            
-            <div class="mb-4">
-                <p class="text-[10px] text-gray-500 uppercase">Descrição</p>
-                <div class="text-sm text-gray-300 mt-1 leading-relaxed bg-[#0b0c10] p-3 rounded border border-borderCol">
-                    {{ chamado.descricao|linebreaks }}
+            <div class="bg-card border border-borderCol rounded-lg p-6 h-fit">
+                <h3 class="text-xs font-bold text-gray-500 uppercase mb-4 border-b border-borderCol pb-2">Detalhes da Solicitação</h3>
+                <div class="mb-4">
+                    <p class="text-[10px] text-gray-500 uppercase">Prioridade</p>
+                    <p class="text-white font-bold">{{ chamado.get_prioridade_display }}</p>
+                </div>
+                <div class="mb-4">
+                    <p class="text-[10px] text-gray-500 uppercase">Descrição</p>
+                    <div class="text-sm text-gray-300 mt-1 leading-relaxed bg-[#0b0c10] p-3 rounded border border-borderCol">
+                        {{ chamado.descricao|linebreaks }}
+                    </div>
                 </div>
             </div>
+
+            <div class="bg-card border border-borderCol rounded-lg p-6 h-fit">
+                
+                <div class="flex justify-between items-end border-b border-borderCol pb-2 mb-4">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase">
+                        <i class="fa-solid fa-address-card mr-2"></i>Dados do Cliente
+                    </h3>
+                    
+                    <div class="text-right">
+                        <p class="text-[9px] text-gray-500 uppercase leading-none mb-1">Duração</p>
+                        <p class="text-base font-mono font-bold text-green-400 leading-none">
+                            <i class="fa-solid fa-stopwatch mr-1 text-xs"></i>{{ duracao_atendimento }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    {% if chamado.cliente %}
+                        <div>
+                            <p class="text-[10px] text-gray-500 uppercase">Nome Completo</p>
+                            <p class="text-white font-bold">{{ chamado.cliente.nome }}</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase">CPF</p>
+                                <p class="text-sm font-mono text-gray-300">{{ chamado.cliente.cpf }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase">Empresa</p>
+                                <p class="text-sm text-gray-300">{{ chamado.cliente.empresa|default:"-" }}</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="text-[10px] text-gray-500 uppercase">Contato</p>
+                            <div class="flex flex-col gap-1 mt-1">
+                                {% if chamado.cliente.email %}
+                                    <a href="mailto:{{ chamado.cliente.email }}" class="text-xs text-neonBlue hover:underline flex items-center gap-2">
+                                        <i class="fa-solid fa-envelope"></i> {{ chamado.cliente.email }}
+                                    </a>
+                                {% endif %}
+                                {% if chamado.cliente.telefone %}
+                                    <a href="#" class="text-xs text-green-400 hover:underline flex items-center gap-2">
+                                        <i class="fa-brands fa-whatsapp"></i> {{ chamado.cliente.telefone }}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 opacity-50">
+                            <i class="fa-solid fa-user-shield text-4xl mb-2 text-gray-600"></i>
+                            <p class="text-sm">Chamado Interno</p>
+                            <p class="text-xs font-bold text-white mt-1">{{ chamado.solicitante.username }}</p>
+                            <p class="text-[10px] text-gray-500">Agente/Admin</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
         </div>
 
         <div class="lg:col-span-2 flex flex-col h-[600px] bg-card border border-borderCol rounded-lg overflow-hidden">
@@ -117,67 +178,71 @@
     </div>
     
     <script>
-        // 1. Scroll Automático para o fim ao carregar
+        // 1. Configurações Iniciais
         const chatContainer = document.getElementById('chat-container');
+        const chamadoId = "{{ chamado.id }}";
+        const usuarioLogado = "{{ request.user.username }}"; 
+        
+        // Rola para o final ao abrir
         chatContainer.scrollTop = chatContainer.scrollHeight;
 
-        // 2. ID do Chamado (Pego do Django)
-        const chamadoId = "{{ chamado.id }}";
-        const usuarioLogado = "{{ request.user.username }}"; // Para saber qual lado pintar o balão
-
-        // 3. Função de Atualização (Polling)
+        // 2. Função de Polling (Atualização)
         function atualizarChat() {
-            // Chama a API (sem CPF, pois o agente está logado via cookie)
             fetch(`/api/chat/${chamadoId}/mensagens/`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error("Erro na rede");
+                    return response.json();
+                })
                 .then(data => {
                     const container = document.getElementById('chat-container');
                     
-                    // Limpa o container para redesenhar (jeito simples para garantir ordem)
-                    container.innerHTML = '';
-
+                    // Se estiver vazio
                     if (data.mensagens.length === 0) {
-                        container.innerHTML = `<div class="text-center py-10 opacity-30"><p class="text-sm">Nenhuma interação ainda.</p></div>`;
+                        if (!container.innerHTML.includes('Nenhuma interação')) {
+                            container.innerHTML = `<div class="text-center py-10 opacity-30"><i class="fa-solid fa-comments text-4xl mb-2"></i><p class="text-sm">Nenhuma interação ainda.</p></div>`;
+                        }
                         return;
                     }
 
-                    // Renderiza cada mensagem
+                    // Redesenha mensagens (Estratégia simples: limpa e recria)
+                    // Para apps maiores, usaríamos React/Vue para não piscar a tela, mas aqui ok.
+                    let htmlFinal = `
+                        <div class="text-center mb-4">
+                            <span class="text-[10px] text-gray-600 bg-card px-3 py-1 rounded-full border border-borderCol">
+                                Histórico atualizado
+                            </span>
+                        </div>
+                    `;
+
                     data.mensagens.forEach(msg => {
-                        // Lógica visual: Se eu sou o autor (msg.eh_agente e nome bate?), ou apenas "eh_agente" vs "cliente"
-                        // Vamos simplificar: Se msg.eh_agente == true, é azul escuro (Interno). Se false, é Cliente (Cinza).
-                        
-                        // Mas espere! Se EU sou o agente, minha msg deve ficar na direita (azul).
-                        // Se o OUTRO agente falou, esquerda. Se o CLIENTE falou, esquerda.
-                        
-                        // Ajuste visual para o Agente:
-                        // Minhas mensagens (Agente Logado) -> Direita
-                        // Mensagens do Cliente -> Esquerda
-                        
                         const souEu = (msg.autor === usuarioLogado);
-                        const ehCliente = !msg.eh_agente;
+                        const ehCliente = !msg.eh_agente; // Se não é agente, é cliente
 
                         let alinhamento = souEu ? 'items-end' : 'items-start';
-                        let corFundo = '';
-                        let borda = '';
+                        let corFundo, borda, corTextoAutor;
 
                         if (souEu) {
-                            // Minha msg (Agente Logado)
+                            // Minhas mensagens (Agente Logado) -> Direita / Azul
                             corFundo = 'bg-blue-900/20 text-white rounded-tr-none';
                             borda = 'border border-blue-900/50';
+                            corTextoAutor = 'text-neonBlue';
                         } else if (ehCliente) {
-                            // Cliente Externo
-                            corFundo = 'bg-slate-700 text-white rounded-tl-none'; // Cor diferente para cliente
+                            // Cliente Externo -> Esquerda / Cinza Escuro (Destaque)
+                            corFundo = 'bg-slate-700 text-white rounded-tl-none';
                             borda = 'border border-slate-600';
+                            corTextoAutor = 'text-green-400';
                         } else {
-                            // Outro Agente/Admin
+                            // Outro Agente -> Esquerda / Preto
                             corFundo = 'bg-[#161b22] text-gray-300 rounded-tl-none';
                             borda = 'border border-borderCol';
+                            corTextoAutor = 'text-gray-400';
                         }
 
-                        const htmlMsg = `
-                            <div class="flex flex-col ${alinhamento}">
+                        // Constrói o HTML da mensagem
+                        htmlFinal += `
+                            <div class="flex flex-col ${alinhamento} mb-4">
                                 <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-xs font-bold ${ehCliente ? 'text-neonBlue' : 'text-gray-400'}">
+                                    <span class="text-xs font-bold ${corTextoAutor}">
                                         ${msg.autor}
                                     </span>
                                     <span class="text-[10px] text-gray-600">${msg.data}</span>
@@ -187,15 +252,22 @@
                                 </div>
                             </div>
                         `;
-                        container.innerHTML += htmlMsg;
                     });
+
+                    // Só atualiza o DOM se houver mudança (para evitar flickering/piscar)
+                    // Truque: compara tamanho ou hash, mas aqui vamos substituir direto
+                    container.innerHTML = htmlFinal;
+                    
+                    // Auto-scroll se o usuário já estiver lá embaixo (para não atrapalhar leitura)
+                    // Se a diferença entre scroll e total for pequena, desce.
+                    if (container.scrollHeight - container.scrollTop - container.clientHeight < 300) {
+                        container.scrollTop = container.scrollHeight;
+                    }
                 })
                 .catch(err => console.error("Erro no chat:", err));
         }
 
-        // 4. Inicia o loop a cada 3 segundos
-        // Mas só se o chamado não estiver concluído (opcional, para economizar recurso)
+        // 3. Inicia o loop a cada 3 segundos
         setInterval(atualizarChat, 3000);
-
     </script>
 {% endblock %}

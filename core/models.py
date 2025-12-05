@@ -1,7 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
-
+DEPARTAMENTO_CHOICES = [
+    ('comercial', 'Comercial'),
+    ('administrativo', 'Administrativo'),
+    ('tecnico', 'Técnico'),
+]
 class Agente(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     STATUS_CHOICES = [
@@ -16,7 +20,7 @@ class Agente(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='offline')
     tempo_logado = models.DurationField(null=True, blank=True, help_text="Ex: 04:00:00")
     atendimentos = models.IntegerField(default=0)
-
+    departamento = models.CharField(max_length=20, choices=DEPARTAMENTO_CHOICES, default='tecnico')
     def __str__(self):
         return f"{self.nome} ({self.ramal})"
 
@@ -136,6 +140,7 @@ class Chamado(models.Model):
 
     titulo = models.CharField(max_length=100)
     descricao = models.TextField(verbose_name="Descrição Detalhada")
+    departamento = models.CharField(max_length=20, choices=DEPARTAMENTO_CHOICES, default='tecnico')
     
     # Quem pediu? (Geralmente o Agente)
     solicitante = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -149,6 +154,7 @@ class Chamado(models.Model):
     # Quem vai resolver? (Pode ser nulo no começo)
     atribuido_a = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='chamados_atribuidos')
     
+    data_inicio_atendimento = models.DateTimeField(null=True, blank=True, help_text="Momento que o agente assumiu")
     prioridade = models.CharField(max_length=10, choices=PRIORIDADE_CHOICES, default='media')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='aberto')
     data_abertura = models.DateTimeField(auto_now_add=True)
@@ -177,3 +183,14 @@ class Comentario(models.Model):
 
     def __str__(self):
         return f"Comentário de {self.autor.username} em #{self.chamado.id}"
+    
+class Notificacao(models.Model):
+    destinatario = models.ForeignKey(User, on_delete=models.CASCADE)
+    titulo = models.CharField(max_length=100)
+    mensagem = models.TextField()
+    link = models.CharField(max_length=200, blank=True, null=True) # Para onde vai ao clicar
+    lida = models.BooleanField(default=False)
+    data = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Para {self.destinatario}: {self.titulo}"

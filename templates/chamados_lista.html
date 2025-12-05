@@ -1,10 +1,19 @@
 {% extends 'base.html' %}
-{% block title %}Meus Chamados{% endblock %}
+{% block title %}Fila de Atendimento{% endblock %}
 {% block content %}
     <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold text-white">Central de Chamados</h2>
+        <div>
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-neonGreen opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-neonGreen"></span>
+                </span>
+                Fila de Atendimento em Tempo Real
+            </h2>
+            <p class="text-xs text-gray-500 mt-1">Ordenado por tempo de espera (FIFO)</p>
+        </div>
         <a href="{% url 'novo_chamado' %}" class="bg-neonBlue text-dark px-4 py-2 rounded text-xs font-bold hover:bg-white transition-colors">
-            <i class="fa-solid fa-plus mr-2"></i>Abrir Chamado
+            <i class="fa-solid fa-plus mr-2"></i>Novo Ticket
         </a>
     </div>
 
@@ -13,58 +22,116 @@
             <thead class="bg-[#111318] text-gray-500 text-xs uppercase">
                 <tr>
                     <th class="p-4">ID</th>
+                    <th>Origem / Solicitante</th>
                     <th>Título</th>
-                    <th>Solicitante</th>
                     <th>Prioridade</th>
                     <th>Status</th>
-                    <th>Data</th>
-                </tr>
+                    <th>Tempo Decorrido</th> </tr>
             </thead>
-            <tbody class="divide-y divide-borderCol text-gray-300">
-                {% for ticket in chamados %}
-                <tr class="hover:bg-white/5 transition-colors">
-                    <td class="p-4 font-mono text-xs text-gray-500">#{{ ticket.id }}</td>
-                    <td class="font-bold text-white">
-                        <a href="{% url 'detalhe_chamado' ticket.id %}" class="hover:text-neonBlue transition-colors">
-                            {{ ticket.titulo }}
-                        </a>
-                    </td>
-                    <td class="text-xs">
-                        {% if ticket.cliente %}
-                            <div class="flex items-center gap-2">
-                                <i class="fa-brands {{ ticket.icone_origem }} text-sm"></i>
-                                <div>
-                                    <div class="font-bold text-white">{{ ticket.cliente.nome }}</div>
-                                    <div class="text-[9px] text-gray-500">{{ ticket.cliente.cpf }}</div>
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="flex items-center gap-2">
-                                <i class="fa-solid fa-headset text-gray-500"></i>
-                                <span class="text-gray-400">{{ ticket.solicitante.username }}</span>
-                            </div>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if ticket.prioridade == 'critica' %}
-                            <span class="text-alertRed font-bold uppercase text-[10px]"><i class="fa-solid fa-fire mr-1"></i>Crítica</span>
-                        {% else %}
-                            <span class="text-gray-400 uppercase text-[10px]">{{ ticket.get_prioridade_display }}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <span class="px-2 py-0.5 rounded text-[10px] border uppercase font-bold {{ ticket.cor_badge }}">
-                            {{ ticket.get_status_display }}
-                        </span>
-                    </td>
-                    <td class="text-xs text-gray-500">{{ ticket.data_abertura|date:"d/m H:i" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="p-8 text-center text-gray-500">Nenhum chamado encontrado.</td>
-                </tr>
-                {% endfor %}
+            <tbody id="tabela-chamados" class="divide-y divide-borderCol text-gray-300">
+                <tr><td colspan="6" class="p-8 text-center"><i class="fa-solid fa-circle-notch fa-spin text-neonBlue"></i> Carregando fila...</td></tr>
             </tbody>
         </table>
     </div>
+
+    <script>
+        // Função para formatar segundos em HH:MM:SS
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function atualizarTabela() {
+            fetch('/api/chamados/listar/')
+                .then(r => {
+                    // Se der erro no servidor (500), joga pro 'catch'
+                    if (!r.ok) throw new Error(`Erro no Servidor: ${r.status}`);
+                    return r.json();
+                })
+                .then(data => {
+                    // Se a API retornar um JSON de erro (ex: login)
+                    if (data.erro) throw new Error(data.erro);
+
+                    const tbody = document.getElementById('tabela-chamados');
+                    
+                    if (data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">Nenhum chamado pendente. Bom trabalho! ☕</td></tr>`;
+                        return;
+                    }
+
+                    // Limpa tabela
+                    tbody.innerHTML = '';
+                    const agora = new Date();
+
+                    data.forEach(ticket => {
+                        // Cálculo do Tempo
+                        let htmlTempo = '--:--';
+                        let corTempo = 'text-gray-500';
+                        
+                        if (ticket.timestamp_base) {
+                            const inicio = new Date(ticket.timestamp_base);
+                            const diffSegundos = Math.floor((agora - inicio) / 1000);
+                            const tempoFormatado = formatTime(diffSegundos);
+
+                            if (ticket.tipo_timer === 'espera') {
+                                corTempo = diffSegundos > 1800 ? 'text-alertRed font-bold animate-pulse' : 'text-orange-400 font-mono';
+                                htmlTempo = `<i class="fa-solid fa-hourglass-start mr-1"></i> ${tempoFormatado}`;
+                            } else {
+                                corTempo = 'text-neonBlue font-mono font-bold';
+                                htmlTempo = `<i class="fa-solid fa-stopwatch mr-1"></i> ${tempoFormatado}`;
+                            }
+                        }
+
+                        // Constrói a linha
+                        // --- NOVO: Lógica de cores do Departamento ---
+                        let corDepto = 'border-gray-600 text-gray-400';
+                        // Como a API retorna o nome bonito ("Comercial"), comparamos assim:
+                        if(ticket.departamento === 'Comercial') corDepto = 'border-purple-500 text-purple-400';
+                        if(ticket.departamento === 'Administrativo') corDepto = 'border-blue-500 text-blue-400';
+                        if(ticket.departamento === 'Técnico') corDepto = 'border-orange-500 text-orange-400';
+
+                        // --- Constrói a linha ---
+                        const row = `
+                            <tr class="hover:bg-white/5 transition-colors cursor-pointer group" onclick="window.location.href='/chamados/${ticket.id}/'">
+                                <td class="p-4 font-mono text-xs text-gray-500">#${ticket.id}</td>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-brands ${ticket.origem_icone} text-sm"></i>
+                                        <span class="font-bold text-white group-hover:text-neonBlue">${ticket.solicitante}</span>
+                                    </div>
+                                </td>
+                                
+                                <td class="text-white">
+                                    <div class="font-bold leading-tight">${ticket.titulo}</div>
+                                    <span class="text-[9px] uppercase px-1.5 py-0.5 rounded border ${corDepto} bg-[#0b0c10] inline-block mt-1">
+                                        ${ticket.departamento || 'Geral'}
+                                    </span>
+                                </td>
+
+                                <td><span class="text-xs uppercase">${ticket.prioridade}</span></td>
+                                <td>
+                                    <span class="px-2 py-0.5 rounded text-[10px] border uppercase font-bold ${ticket.cor_badge}">
+                                        ${ticket.status}
+                                    </span>
+                                </td>
+                                <td class="${corTempo}">${htmlTempo}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                })
+                .catch(err => {
+                    console.error("Erro ao carregar:", err);
+                    document.getElementById('tabela-chamados').innerHTML = `
+                        <tr><td colspan="6" class="p-8 text-center text-alertRed">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Falha ao carregar: ${err.message}
+                        </td></tr>`;
+                });
+        }
+        // Atualiza a cada 1 segundo para o relógio andar suavemente
+        setInterval(atualizarTabela, 1000);
+        atualizarTabela(); // Primeira carga
+    </script>
 {% endblock %}

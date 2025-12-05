@@ -2,29 +2,51 @@ import csv
 from .forms import NovoUsuarioForm, ChamadoForm, ComentarioForm
 from django.http import HttpResponse
 from django.shortcuts import render
-from .models import Agente, AccessPoint, SecurityLog, HistoricoOperacao, Chamado, Comentario
-from django.db.models import Q
+from .models import *
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
+from django.db.models import Avg, F, DurationField, ExpressionWrapper, Q
 
-
+@login_required
 def home(request):
-    # LÓGICA DE SEPARAÇÃO:
-    # Se NÃO for superusuário (é Agente), joga para o painel dele
+    # LÓGICA DE SEPARAÇÃO (Se for Agente, joga pro painel dele)
     if not request.user.is_superuser:
         return redirect('painel_agente')
 
-    # --- LÓGICA ORIGINAL DO DASHBOARD DE ADMIN ---
+    # --- CARDS DE DADOS (Códigos que já existiam) ---
     total_agentes = Agente.objects.count()
     agentes_online = Agente.objects.filter(status='online').count()
     total_aps = AccessPoint.objects.count()
     aps_offline = AccessPoint.objects.filter(status='offline').count()
     incidentes_criticos = SecurityLog.objects.filter(severidade='critica', status=False).count()
+    
+    # --- CÁLCULO DAS MÉTRICAS REAIS (NOVO) ---
+    
+    # 1. TMA (Tempo Médio de Atendimento)
+    tma_calc = Chamado.objects.filter(status='concluido', data_inicio_atendimento__isnull=False).aggregate(
+        media=Avg(F('data_conclusao') - F('data_inicio_atendimento'))
+    )
+    tma_valor = tma_calc['media']
 
-    # Gráfico
+    # 2. TME (Tempo Médio de Espera)
+    tme_calc = Chamado.objects.filter(data_inicio_atendimento__isnull=False).aggregate(
+        media=Avg(F('data_inicio_atendimento') - F('data_abertura'))
+    )
+    tme_valor = tme_calc['media']
+
+    # --- FUNÇÃO AUXILIAR DE FORMATAÇÃO (O CÓDIGO QUE VOCÊ PERGUNTOU) ---
+    def formatar_delta(delta):
+        if not delta: return "00:00:00"
+        total_seconds = int(delta.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{hours:02}:{minutes:02}:{seconds:02}"
+
+    # --- GRÁFICO ---
     historico = HistoricoOperacao.objects.all().order_by('-data_hora')[:10]
     historico = reversed(historico)
     labels_hora = []
@@ -34,7 +56,8 @@ def home(request):
         labels_hora.append(registro.data_hora.strftime("%H:%M"))
         dados_chamadas.append(registro.chamadas_ativas)
         dados_rede.append(registro.trafego_rede_mbps)
-
+    
+    # --- CONTEXTO FINAL ---
     contexto = {
         'total_agentes': total_agentes,
         'agentes_online': agentes_online,
@@ -44,7 +67,12 @@ def home(request):
         'chart_labels': labels_hora,
         'chart_chamadas': dados_chamadas,
         'chart_rede': dados_rede,
+        
+        # AQUI ENTRAM AS NOVAS VARIÁVEIS FORMATADAS
+        'tma_real': formatar_delta(tma_valor),
+        'tme_real': formatar_delta(tme_valor),
     }
+    
     return render(request, 'home.html', contexto)
 
 def conectividade(request):
@@ -244,14 +272,11 @@ def novo_chamado(request):
 
 @login_required
 def detalhe_chamado(request, id):
-    # Busca o chamado (e garante que o usuário tem permissão para ver)
     chamado = get_object_or_404(Chamado, id=id)
     
-    # Segurança: Se não for admin E não for o dono do chamado, bloqueia
-    if not request.user.is_superuser and chamado.solicitante != request.user:
-        return redirect('lista_chamados')
-
-    # Lógica 1: Processar Novo Comentário
+    # ---------------------------------------------------------
+    # 1. LÓGICA DE POST: NOVOS COMENTÁRIOS
+    # ---------------------------------------------------------
     if request.method == 'POST' and 'btn_comentario' in request.POST:
         form = ComentarioForm(request.POST)
         if form.is_valid():
@@ -261,24 +286,106 @@ def detalhe_chamado(request, id):
             comentario.save()
             return redirect('detalhe_chamado', id=id)
 
-    # Lógica 2: Processar Mudança de Status (Só Admin ou Dono pode fechar?)
-    # Vamos permitir que Admin mude tudo, e usuário apenas reabra ou feche.
+    # ---------------------------------------------------------
+    # 2. LÓGICA DE POST: MUDANÇA DE STATUS (PLAY/STOP)
+    # ---------------------------------------------------------
     if request.method == 'POST' and 'btn_status' in request.POST:
         novo_status = request.POST.get('novo_status')
         if novo_status:
             chamado.status = novo_status
+            
+            # Se for iniciar atendimento (Play) e ainda não tiver data de início
+            if novo_status == 'andamento' and chamado.data_inicio_atendimento is None:
+                chamado.data_inicio_atendimento = timezone.now()
+                # Se ninguém assumiu ainda, quem clicou assume
+                if not chamado.atribuido_a:
+                    chamado.atribuido_a = request.user 
+            
+            # Se for concluir, grava a data final
+            if novo_status == 'concluido':
+                chamado.data_conclusao = timezone.now()
+
             chamado.save()
             return redirect('detalhe_chamado', id=id)
 
+    # ---------------------------------------------------------
+    # 3. CÁLCULO DA DURAÇÃO DO ATENDIMENTO
+    # ---------------------------------------------------------
+    duracao_atendimento = "--"
+    
+    # Só calcula se o atendimento já começou (tem data de início)
+    if chamado.data_inicio_atendimento:
+        # Se já acabou, usa a data final. Se não (está rodando), usa AGORA.
+        data_final = chamado.data_conclusao if chamado.data_conclusao else timezone.now()
+        
+        # Diferença entre os dois horários
+        diff = data_final - chamado.data_inicio_atendimento
+        
+        # Matemática para formatar bonito (Dias, Horas, Minutos)
+        total_seconds = int(diff.total_seconds())
+        m, s = divmod(total_seconds, 60)
+        h, m = divmod(m, 60)
+        
+        if h > 0:
+            duracao_atendimento = f"{h}h {m}m"
+        else:
+            duracao_atendimento = f"{m}m {s}s"
+
+    # ---------------------------------------------------------
+    # 4. PREPARAÇÃO DOS DADOS PARA O TEMPLATE
+    # ---------------------------------------------------------
     form = ComentarioForm()
+    # Pega comentários ordenados por data
     comentarios = chamado.comentarios.all().order_by('data')
 
     contexto = {
         'chamado': chamado,
         'comentarios': comentarios,
-        'form': form
+        'form': form,
+        'duracao_atendimento': duracao_atendimento, # Variável enviada para o card lateral
     }
+    
     return render(request, 'chamado_detalhe.html', contexto)
 
 def teste_widget(request):
     return render(request, 'widget_demo.html')
+
+@login_required
+def historico_chamados(request):
+    # Regra de Permissão:
+    # Admin vê TODO o histórico.
+    # Agente vê apenas o histórico DOS SEUS chamados.
+    
+    if request.user.is_superuser:
+        chamados = Chamado.objects.filter(status='concluido').order_by('-data_conclusao')
+    else:
+        chamados = Chamado.objects.filter(solicitante=request.user, status='concluido').order_by('-data_conclusao')
+    
+    # Calcular duração para cada chamado na lista
+    for c in chamados:
+        if c.data_inicio_atendimento and c.data_conclusao:
+            diff = c.data_conclusao - c.data_inicio_atendimento
+            # Formatação manual bonita (ex: "05m 22s")
+            total_seconds = int(diff.total_seconds())
+            m, s = divmod(total_seconds, 60)
+            h, m = divmod(m, 60)
+            c.duracao_formatada = f"{h}h {m}m" if h > 0 else f"{m}m {s}s"
+        else:
+            c.duracao_formatada = "--"
+
+    return render(request, 'chamados_historico.html', {'chamados': chamados})
+
+@login_required
+@user_passes_test(check_admin)
+def lista_usuarios(request):
+    # Lista 1: Equipe Interna (Agentes e Admins)
+    colaboradores = Agente.objects.all().select_related('user').order_by('nome')
+    
+    # Lista 2: Clientes Externos (Cadastrados via Chat/Ticket)
+    clientes = Cliente.objects.all().order_by('nome')
+    
+    contexto = {
+        'colaboradores': colaboradores,
+        'clientes': clientes
+    }
+    return render(request, 'usuarios_list.html', contexto)

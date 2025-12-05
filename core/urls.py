@@ -15,6 +15,7 @@ urlpatterns = [
     path('chamados/novo/', views.novo_chamado, name='novo_chamado'),
     path('chamados/<int:id>/', views.detalhe_chamado, name='detalhe_chamado'),
     
+    
     # Nova Rota de Exportação
     path('exportar/agentes/', views.exportar_csv_agentes, name='exportar_agentes'),
 
@@ -23,4 +24,9 @@ urlpatterns = [
     path('teste-widget/', views.teste_widget),
     path('api/chat/<int:chamado_id>/mensagens/', api.verificar_mensagens),
     path('api/chat/<int:chamado_id>/enviar/', api.enviar_mensagem_externa),
+    path('api/chat/<int:chamado_id>/encerrar/', api.encerrar_chamado_externo),
+    path('api/notificacoes/checar/', api.checar_notificacoes),
+    path('api/notificacoes/limpar/', api.marcar_como_lida),
+    path('api/chamados/listar/', api.listar_chamados_dinamico, name='api_listar_chamados'),
+    path('chamados/historico/', views.historico_chamados, name='historico_chamados'),
 ]

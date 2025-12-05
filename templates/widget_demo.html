@@ -1,15 +1,14 @@
 <style>
-    /* Estilos do Chat */
     .ad-hidden { display: none !important; }
-    .ad-bubble { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
+    .ad-bubble { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; word-wrap: break-word; }
     .ad-agent { background: #1f2937; color: #fff; border-top-left-radius: 0; align-self: flex-start; border: 1px solid #374151; }
     .ad-client { background: #0ea5e9; color: #fff; border-top-right-radius: 0; align-self: flex-end; }
-    .ad-info { font-size: 10px; color: #6b7280; text-align: center; margin: 5px 0; }
+    #alidash-widget { font-family: 'Segoe UI', sans-serif; }
 </style>
 
-<div id="alidash-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-family: 'Segoe UI', sans-serif;">
+<div id="alidash-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
     
-    <button onclick="toggleChat()" style="width: 60px; height: 60px; border-radius: 50%; background: #38bdf8; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s;">
+    <button onclick="toggleChat()" id="ad-toggle-btn" style="width: 60px; height: 60px; border-radius: 50%; background: #38bdf8; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
     </button>
 
@@ -18,143 +17,310 @@
         <div style="background: #161b22; padding: 15px; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h3 style="margin: 0; color: white; font-size: 14px; font-weight: bold;">Suporte Online</h3>
-                <p id="ad-status-text" style="margin: 0; font-size: 11px; color: #38bdf8;">Preencha para iniciar</p>
+                <p id="ad-status-text" style="margin: 0; font-size: 11px; color: #38bdf8;">Conectado</p>
             </div>
-            <button onclick="toggleChat()" style="background: none; border: none; color: #6b7280; cursor: pointer;">✕</button>
+            <button onclick="sairDoChat()" title="Encerrar Conversa" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 11px; font-weight: bold;">ENCERRAR</button>
         </div>
 
-        <div id="ad-form-screen" style="padding: 20px; flex: 1;">
-            <p style="color: #9ca3af; font-size: 13px; margin-bottom: 15px;">Bem-vindo! Identifique-se para falar com um atendente.</p>
+        <div id="ad-form-screen" style="padding: 20px; flex: 1; display: flex; flex-direction: column;">
+            <p style="color: #9ca3af; font-size: 13px; margin-bottom: 15px;">Identifique-se para iniciar.</p>
+            
             <input type="text" id="ad-nome" placeholder="Seu Nome" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box;">
+            
             <input type="text" id="ad-cpf" placeholder="Seu CPF (apenas números)" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box;">
-            <textarea id="ad-msg-inicial" rows="3" placeholder="Como podemos ajudar?" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box; resize: none;"></textarea>
-            <button onclick="iniciarAtendimento()" id="ad-btn-start" style="width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Iniciar Chat</button>
+            
+            <textarea id="ad-msg-inicial" rows="3" placeholder="Mensagem inicial..." style="width: 100%; padding: 10px; margin-bottom: 10px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box; resize: none;"></textarea>
+            
+            <select id="ad-departamento" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box; cursor: pointer;">
+                <option value="" disabled selected>Selecione o Setor...</option>
+                <option value="comercial">Comercial</option>
+                <option value="administrativo">Administrativo</option>
+                <option value="tecnico">Suporte Técnico</option>
+            </select>
+
+            <button onclick="iniciarAtendimento()" id="ad-btn-start" style="width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 12px;">Iniciar Chat</button>
         </div>
 
+        <select id="ad-departamento" style="width: 100%; padding: 10px; margin-bottom: 10px; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px;">
+                <option value="" disabled selected>Selecione o Setor</option>
+                <option value="comercial">Comercial (Vendas/Planos)</option>
+                <option value="administrativo">Administrativo (Financeiro)</option>
+                <option value="tecnico">Suporte Técnico</option>
+            </select>
         <div id="ad-chat-screen" class="ad-hidden" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-            <div id="ad-messages" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 5px;">
-                </div>
+            <div id="ad-messages" style="flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 5px;"></div>
             
             <div style="padding: 10px; background: #161b22; border-top: 1px solid #30363d; display: flex; gap: 10px;">
-                <input type="text" id="ad-input-msg" placeholder="Digite sua mensagem..." style="flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 8px; border-radius: 20px; outline: none;">
+                <input type="text" id="ad-input-msg" onkeypress="resetInactivityTimer()" placeholder="Digite..." style="flex: 1; background: #0d1117; border: 1px solid #30363d; color: white; padding: 8px; border-radius: 20px; outline: none;">
                 <button onclick="enviarMensagem()" style="background: #38bdf8; color: #0b0c10; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold;">➤</button>
             </div>
         </div>
-
     </div>
 </div>
 
 <script>
-    // Variáveis de Estado
+    // --- CONFIGURAÇÕES ---
+    const TIMEOUT_MINUTES = 10; 
+    let inactivityTime = 0; 
+    let inactivityInterval = null;
     let currentChamadoId = null;
     let currentCPF = null;
-    let chatInterval = null;
+    let chatPolling = null;
+    let ultimaMsgFoiAgente = false; 
+
+    // --- AO CARREGAR ---
+    window.onload = function() {
+        // Aplica máscara no input de CPF assim que carregar
+        const inputCpf = document.getElementById('ad-cpf');
+        if(inputCpf) {
+            inputCpf.addEventListener('input', function(e) {
+                let x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,2})/);
+                e.target.value = !x[2] ? x[1] : x[1] + '.' + x[2] + (x[3] ? '.' + x[3] : '') + (x[4] ? '-' + x[4] : '');
+            });
+        }
+
+        const savedId = localStorage.getItem('ali_chamado_id');
+        const savedCPF = localStorage.getItem('ali_cpf');
+        if (savedId && savedCPF) {
+            currentChamadoId = savedId;
+            currentCPF = savedCPF;
+            validarSessaoAtiva();
+        }
+    };
 
     function toggleChat() {
-        const win = document.getElementById('ad-window');
-        win.classList.toggle('ad-hidden');
+        document.getElementById('ad-window').classList.toggle('ad-hidden');
     }
 
-    // 1. Cria o Chamado Inicial
+    // --- VALIDAÇÃO CPF CLIENT-SIDE ---
+    function validarCPFVisual(cpf) {
+        cpf = cpf.replace(/[^\d]+/g,'');
+        if(cpf == '') return false;
+        // Elimina CPFs invalidos conhecidos
+        if (cpf.length != 11 || 
+            cpf == "00000000000" || 
+            cpf == "11111111111" || 
+            cpf == "22222222222" || 
+            cpf == "33333333333" || 
+            cpf == "44444444444" || 
+            cpf == "55555555555" || 
+            cpf == "66666666666" || 
+            cpf == "77777777777" || 
+            cpf == "88888888888" || 
+            cpf == "99999999999")
+                return false;
+        // Valida 1o digito
+        add = 0;
+        for (i=0; i < 9; i ++) add += parseInt(cpf.charAt(i)) * (10 - i);
+        rev = 11 - (add % 11);
+        if (rev == 10 || rev == 11) rev = 0;
+        if (rev != parseInt(cpf.charAt(9))) return false;
+        // Valida 2o digito
+        add = 0;
+        for (i = 0; i < 10; i ++) add += parseInt(cpf.charAt(i)) * (11 - i);
+        rev = 11 - (add % 11);
+        if (rev == 10 || rev == 11) rev = 0;
+        if (rev != parseInt(cpf.charAt(10))) return false;
+        return true;
+    }
+
+    // --- LÓGICA DE SESSÃO ---
+    async function validarSessaoAtiva() {
+        try {
+            const res = await fetch(`/api/chat/${currentChamadoId}/mensagens/?cpf=${currentCPF}`);
+            if (res.status === 200) {
+                const data = await res.json();
+                if (data.status_chamado === 'concluido') {
+                    sairDoChat(false);
+                    alert("Seu chamado foi encerrado.");
+                } else {
+                    mostrarTelaChat();
+                    renderizarMensagens(data.mensagens); 
+                    iniciarPolling();
+                    iniciarTimerInatividade();
+                }
+            } else { sairDoChat(false); }
+        } catch(e) { sairDoChat(false); }
+    }
+
+    function mostrarTelaChat() {
+        document.getElementById('ad-form-screen').classList.add('ad-hidden');
+        document.getElementById('ad-chat-screen').classList.remove('ad-hidden');
+        document.getElementById('ad-status-text').innerText = `Chamado #${currentChamadoId}`;
+    }
+
     async function iniciarAtendimento() {
         const nome = document.getElementById('ad-nome').value;
-        const cpf = document.getElementById('ad-cpf').value;
+        const cpfRaw = document.getElementById('ad-cpf').value;
         const msg = document.getElementById('ad-msg-inicial').value;
+        
+        // Pega o valor do novo campo
+        const depto = document.getElementById('ad-departamento').value;
+        
         const btn = document.getElementById('ad-btn-start');
 
-        if(!cpf || !msg) return alert("CPF e Mensagem são obrigatórios");
+        // Validação: Garante que o setor foi escolhido
+        if(!nome || !cpfRaw || !msg || !depto) {
+            alert("Por favor, preencha todos os campos e selecione o setor.");
+            return;
+        }
+        
+        if (!validarCPFVisual(cpfRaw)) {
+            alert("CPF Inválido! Verifique os números.");
+            return;
+        }
 
-        btn.innerText = "Conectando...";
+        btn.innerText = "CONECTANDO...";
         btn.disabled = true;
 
         try {
             const response = await fetch('/api/abrir-chamado/', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ nome, cpf, mensagem: msg, origem: 'site' })
+                body: JSON.stringify({ 
+                    nome: nome, 
+                    cpf: cpfRaw, 
+                    mensagem: msg, 
+                    origem: 'site',
+                    departamento: depto // Envia o departamento selecionado
+                })
             });
             const data = await response.json();
 
             if(data.sucesso) {
-                // Sucesso! Muda para tela de chat
-                currentChamadoId = data.chamado_id;
-                currentCPF = cpf;
-                
-                document.getElementById('ad-form-screen').classList.add('ad-hidden');
-                document.getElementById('ad-chat-screen').classList.remove('ad-hidden');
-                document.getElementById('ad-status-text').innerText = `Chamado #${currentChamadoId}`;
+                const cpfLimpo = cpfRaw.replace(/[^\d]+/g,'');
+                localStorage.setItem('ali_chamado_id', data.chamado_id);
+                localStorage.setItem('ali_cpf', cpfLimpo);
 
-                // Adiciona msg inicial no visual
-                addMessageToScreen(msg, false, 'Agora');
-                
-                // Começa a verificar novas mensagens a cada 3s
-                startPolling();
+                currentChamadoId = data.chamado_id;
+                currentCPF = cpfLimpo;
+                ultimaMsgFoiAgente = false; 
+
+                mostrarTelaChat();
+                addMessageToScreen(msg, false, 'Agora'); 
+                iniciarPolling();
+                iniciarTimerInatividade();
             } else {
                 alert("Erro: " + data.erro);
-                btn.disabled = false;
             }
         } catch(e) {
-            console.error(e);
-            alert("Erro de conexão");
-            btn.disabled = false;
+            alert("Erro de conexão com o servidor.");
+        }
+        btn.disabled = false;
+        btn.innerText = "INICIAR CHAT";
+    }
+
+    // --- LÓGICA DE INATIVIDADE ---
+    function iniciarTimerInatividade() {
+        if (inactivityInterval) clearInterval(inactivityInterval);
+        inactivityTime = 0;
+        const limiteSegundos = TIMEOUT_MINUTES * 60; 
+
+        inactivityInterval = setInterval(() => {
+            if (ultimaMsgFoiAgente) {
+                inactivityTime++;
+                if (inactivityTime >= limiteSegundos) {
+                    sairDoChat(true); 
+                    alert("Sessão encerrada por falta de resposta.");
+                }
+            } else {
+                inactivityTime = 0;
+            }
+        }, 1000);
+        
+        const widget = document.getElementById('alidash-widget');
+        widget.onmousemove = resetInactivityTimer;
+        widget.onclick = resetInactivityTimer;
+        document.getElementById('ad-input-msg').onkeypress = resetInactivityTimer;
+    }
+
+    function resetInactivityTimer() { inactivityTime = 0; }
+
+    async function sairDoChat(avisarAPI = true) {
+        if (avisarAPI && currentChamadoId) {
+            try {
+                await fetch(`/api/chat/${currentChamadoId}/encerrar/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ cpf: currentCPF })
+                });
+            } catch(e) { console.log(e); }
+        }
+
+        localStorage.removeItem('ali_chamado_id');
+        localStorage.removeItem('ali_cpf');
+        currentChamadoId = null;
+        currentCPF = null;
+        ultimaMsgFoiAgente = false;
+
+        if (chatPolling) clearInterval(chatPolling);
+        if (inactivityInterval) clearInterval(inactivityInterval);
+        
+        const widget = document.getElementById('alidash-widget');
+        widget.onmousemove = null;
+        widget.onclick = null;
+
+        document.getElementById('ad-chat-screen').classList.add('ad-hidden');
+        document.getElementById('ad-form-screen').classList.remove('ad-hidden');
+        document.getElementById('ad-messages').innerHTML = ''; 
+        document.getElementById('ad-nome').value = '';
+        document.getElementById('ad-cpf').value = '';
+        document.getElementById('ad-msg-inicial').value = '';
+        document.getElementById('ad-status-text').innerText = 'Conectado';
+    }
+
+    // --- CHAT ---
+    async function fetchMessages() {
+        if(!currentChamadoId) return;
+        const res = await fetch(`/api/chat/${currentChamadoId}/mensagens/?cpf=${currentCPF}`);
+        const data = await res.json();
+        
+        if (data.status_chamado === 'concluido') {
+            sairDoChat(false);
+            alert("Atendimento finalizado.");
+            return;
+        }
+        renderizarMensagens(data.mensagens);
+    }
+
+    function renderizarMensagens(listaMensagens) {
+        const chatBox = document.getElementById('ad-messages');
+        chatBox.innerHTML = ''; 
+        if (listaMensagens.length > 0) {
+            const ultimaMsg = listaMensagens[listaMensagens.length - 1];
+            ultimaMsgFoiAgente = ultimaMsg.eh_agente;
+            listaMensagens.forEach(m => addMessageToScreen(m.texto, m.eh_agente, m.data));
         }
     }
 
-    // 2. Loop que busca mensagens novas (Polling)
-    function startPolling() {
-        chatInterval = setInterval(async () => {
-            if(!currentChamadoId) return;
-
-            const res = await fetch(`/api/chat/${currentChamadoId}/mensagens/?cpf=${currentCPF}`);
-            const data = await res.json();
-            
-            // Limpa e redesenha (simples para garantir ordem)
-            const chatBox = document.getElementById('ad-messages');
-            chatBox.innerHTML = ''; 
-
-            // Reconstrói histórico
-            data.mensagens.forEach(m => {
-                addMessageToScreen(m.texto, m.eh_agente, m.data);
-            });
-            
-            // Auto scroll
-            // chatBox.scrollTop = chatBox.scrollHeight; 
-        }, 3000); // 3 segundos
+    function iniciarPolling() {
+        if (chatPolling) clearInterval(chatPolling);
+        chatPolling = setInterval(fetchMessages, 3000);
     }
 
-    // 3. Envia nova mensagem do cliente
     async function enviarMensagem() {
+        resetInactivityTimer();
         const input = document.getElementById('ad-input-msg');
         const texto = input.value;
         if(!texto) return;
-
-        input.value = ''; // Limpa input
-        
-        // Mostra visualmente na hora (otimismo)
-        // addMessageToScreen(texto, false, 'Enviando...');
+        input.value = ''; 
+        ultimaMsgFoiAgente = false; 
 
         await fetch(`/api/chat/${currentChamadoId}/enviar/`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ cpf: currentCPF, mensagem: texto })
         });
-        
-        // O Polling vai trazer a msg confirmada depois de 3s, ou podemos forçar update aqui
+        fetchMessages();
     }
 
-    // Auxiliar Visual
     function addMessageToScreen(texto, ehAgente, hora) {
         const chatBox = document.getElementById('ad-messages');
         const div = document.createElement('div');
-        
-        if (ehAgente) {
-            div.className = 'ad-bubble ad-agent';
-            div.innerHTML = `<strong>Agente:</strong><br>${texto} <span style="font-size:9px; opacity:0.7; float:right; margin-top:5px; margin-left:5px;">${hora}</span>`;
-        } else {
-            div.className = 'ad-bubble ad-client';
-            div.innerHTML = `${texto} <span style="font-size:9px; opacity:0.7; float:right; margin-top:5px; margin-left:5px;">${hora}</span>`;
-        }
-        
+        div.className = ehAgente ? 'ad-bubble ad-agent' : 'ad-bubble ad-client';
+        div.innerHTML = ehAgente 
+            ? `<strong>Agente:</strong><br>${texto} <span style="font-size:9px; opacity:0.7; float:right; margin-top:5px;">${hora}</span>`
+            : `${texto} <span style="font-size:9px; opacity:0.7; float:right; margin-top:5px;">${hora}</span>`;
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
