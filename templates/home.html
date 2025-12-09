@@ -1,85 +1,117 @@
 {% extends 'base.html' %}
 
-{% block title %}Visão Geral{% endblock %}
+{% block title %}Visão Geral do Provedor{% endblock %}
 
 {% block content %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-neonBlue transition-colors">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        
+        <a href="{% url 'devices:lista_clientes' %}" class="block">
+            <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-neonBlue transition-colors duration-300">
             <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                <i class="fa-solid fa-wifi text-6xl text-neonBlue"></i>
+                <i class="fa-solid fa-network-wired text-6xl text-neonBlue"></i>
             </div>
-            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Access Points</p>
-            <h3 class="text-3xl font-bold text-white mb-2">{{ total_aps }} <span class="text-sm text-gray-500 font-normal">/ 470</span></h3>
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1 tracking-wider">CPEs em Clientes</p>
+            <h3 class="text-3xl font-bold text-white mb-2">
+                {{ roteadores_online_clientes }} 
+                <span class="text-sm text-gray-500 font-normal">/ {{ total_roteadores_clientes }}</span>
+            </h3>
             <div class="w-full bg-gray-800 h-1.5 rounded-full mt-2">
-                <div class="bg-neonBlue h-1.5 rounded-full" style="width: 99%"></div>
+                <div class="bg-neonBlue h-1.5 rounded-full shadow-[0_0_10px_#3b82f6]" style="width: 75%"></div>
             </div>
-        </div>
-        <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-neonGreen transition-colors">
+            <p class="text-[10px] text-neonBlue mt-2">Roteadores Online</p>
+        </div></a>
+
+        <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-neonGreen transition-colors duration-300">
             <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                 <i class="fa-solid fa-users text-6xl text-neonGreen"></i>
             </div>
-            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Agentes Online</p>
-            <h3 class="text-3xl font-bold text-white mb-2">{{ agentes_online }} <span class="text-sm text-neonGreen font-mono">▲ 12%</span></h3>
-            <div class="text-[10px] text-gray-400">
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1 tracking-wider">Equipe Online</p>
+            <h3 class="text-3xl font-bold text-white mb-2">
+                {{ agentes_online }} 
+                <span class="text-sm text-neonGreen font-mono text-base">Ativos</span>
+            </h3>
+            <div class="text-[10px] text-gray-400 mt-2 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-neonGreen animate-pulse"></span>
                 <span>Total Cadastrado: {{ total_agentes }}</span>
             </div>
         </div>
-        <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-alertRed transition-colors">
+
+        <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-alertRed transition-colors duration-300">
             <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                <i class="fa-solid fa-triangle-exclamation text-6xl text-alertRed"></i>
+                <i class="fa-solid fa-ban text-6xl text-alertRed"></i>
             </div>
-            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Incidentes Críticos</p>
-            <h3 class="text-3xl font-bold text-alertRed mb-2">3</h3>
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1 tracking-wider">Bloqueios PPoE</p>
+            <h3 class="text-3xl font-bold text-alertRed mb-2">{{ clientes_bloqueados }}</h3>
+            <div class="text-[10px] text-gray-400 mt-2">
+                <span class="text-alertRed font-bold">Ação Necessária:</span> Clientes Inadimplentes
+            </div>
         </div>
-        <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-warnYellow transition-colors">
+
+        <div class="bg-card p-5 rounded-lg border border-borderCol shadow-lg relative overflow-hidden group hover:border-warnYellow transition-colors duration-300">
             <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                 <i class="fa-solid fa-stopwatch text-6xl text-warnYellow"></i>
             </div>
-            <p class="text-xs text-gray-500 uppercase font-bold mb-1">TMA/TME Global</p>
-            <h3 class="text-3xl font-bold text-white mb-2">{{ tma_real }} e {{ tme_real }}</h3>
+            <p class="text-xs text-gray-500 uppercase font-bold mb-1 tracking-wider">Performance (TMA / TME)</p>
+            <div class="flex items-end gap-2">
+                <h3 class="text-2xl font-bold text-white">{{ tma_real }}</h3>
+                <span class="text-xs text-gray-500 mb-1">Médio</span>
+            </div>
+            <p class="text-[10px] text-warnYellow mt-1">Espera Média: {{ tme_real }}</p>
         </div>
     </div>
 
-    <div class="bg-card rounded-lg border border-borderCol p-4 h-96">
-        <h3 class="text-sm font-bold uppercase text-gray-300 mb-4">Volume de Tráfego vs. Chamadas</h3>
+    <div class="bg-card rounded-lg border border-borderCol p-5 h-96 shadow-xl">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-bold uppercase text-gray-300 tracking-wider">
+                <i class="fa-solid fa-chart-line mr-2 text-neonPurple"></i> Tráfego vs. Chamadas
+            </h3>
+            <span class="text-[10px] bg-gray-800 text-gray-400 px-2 py-1 rounded border border-gray-700">Ao vivo</span>
+        </div>
         <div class="relative w-full h-full pb-8">
             <canvas id="mainChart"></canvas>
         </div>
     </div>
+
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const ctx = document.getElementById('mainChart').getContext('2d');
     
-    // Recebendo dados do Django (Django Template Language)
-    // O filtro |safe é vital para o JS entender que é uma lista segura
+    // Recebendo dados do Django com segurança
     const labels = {{ chart_labels|safe }};
     const dataChamadas = {{ chart_chamadas|safe }};
     const dataRede = {{ chart_rede|safe }};
 
+    // Configuração do Gráfico (Cyberpunk Style)
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels, // Eixo X (Horários)
+            labels: labels,
             datasets: [
                 {
                     label: 'Chamadas Ativas',
-                    data: dataChamadas, // Dados do Banco
-                    borderColor: '#a855f7', // Roxo
+                    data: dataChamadas,
+                    borderColor: '#a855f7', // Roxo Neon
                     backgroundColor: 'rgba(168, 85, 247, 0.1)',
                     yAxisID: 'y_chamadas',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointBackgroundColor: '#a855f7',
+                    pointBorderColor: '#fff'
                 },
                 {
                     label: 'Tráfego Rede (Mbps)',
-                    data: dataRede, // Dados do Banco
-                    borderColor: '#38bdf8', // Azul
+                    data: dataRede,
+                    borderColor: '#38bdf8', // Azul Neon
                     backgroundColor: 'rgba(56, 189, 248, 0.0)',
                     yAxisID: 'y_rede',
                     tension: 0.4,
-                    borderDash: [5, 5]
+                    borderDash: [5, 5],
+                    pointRadius: 0, // Linha limpa sem pontos
+                    borderWidth: 2
                 }
             ]
         },
@@ -92,40 +124,46 @@
             },
             plugins: { 
                 legend: { 
-                    labels: { color: '#9ca3af' } 
-                } 
+                    labels: { color: '#9ca3af', font: { family: 'Inter' } } 
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                    titleColor: '#fff',
+                    bodyColor: '#ccc',
+                    borderColor: '#374151',
+                    borderWidth: 1
+                }
             },
             scales: {
                 x: { 
-                    grid: { color: '#30363d' },
+                    grid: { color: 'rgba(75, 85, 99, 0.2)' },
                     ticks: { color: '#6b7280' }
                 },
-                // Eixo Esquerdo (Chamadas - Roxo)
                 y_chamadas: {
                     type: 'linear',
                     display: true,
                     position: 'left',
-                    grid: { color: '#30363d' },
+                    grid: { color: 'rgba(75, 85, 99, 0.2)' },
                     ticks: { color: '#a855f7' },
                     title: { display: true, text: 'Chamadas', color: '#a855f7' }
                 },
-                // Eixo Direito (Rede - Azul)
                 y_rede: {
                     type: 'linear',
                     display: true,
                     position: 'right',
-                    grid: { drawOnChartArea: false }, // Remove grades duplicadas
+                    grid: { drawOnChartArea: false },
                     ticks: { color: '#38bdf8' },
                     title: { display: true, text: 'Mbps', color: '#38bdf8' }
                 }
             }
         }
     });
+
+    // Auto-reload para atualizar o dashboard
     setTimeout(function() {
         window.location.reload(1);
-    }, 15000); // 15000 ms = 15 segundos
+    }, 15000);
     
-    // Mostra um contador visual no console (opcional, para debug)
-    console.log("AliDash: Próxima atualização em 15s...");
+    console.log("AliDash Monitor: Atualização agendada.");
 </script>
 {% endblock %}

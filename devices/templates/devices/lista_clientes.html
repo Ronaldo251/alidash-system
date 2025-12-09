@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestão de Assinantes{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row justify-between items-center mb-6">
+    <div>
+        <h2 class="text-2xl font-bold text-white uppercase tracking-wider">
+            <i class="fa-solid fa-server text-neonBlue mr-2"></i> Base de Assinantes
+        </h2>
+        <p class="text-xs text-gray-500">Gerenciamento de CPEs e Bloqueios PPPoE</p>
+    </div>
+    
+    <form method="GET" class="flex gap-2 w-full md:w-auto mt-4 md:mt-0">
+        <div class="relative">
+            <input type="text" name="q" value="{{ query }}" placeholder="Buscar Cliente, CPF ou Login..." 
+                   class="bg-gray-800 border border-gray-700 text-gray-300 text-sm rounded-lg focus:ring-neonBlue focus:border-neonBlue block w-64 p-2.5 pl-10">
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <i class="fa-solid fa-search text-gray-500"></i>
+            </div>
+        </div>
+        <button type="submit" class="bg-neonBlue hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-sm transition-colors">
+            Filtrar
+        </button>
+    </form>
+</div>
+
+<div class="bg-card rounded-lg border border-borderCol overflow-hidden shadow-xl">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-800/50 text-xs uppercase text-gray-400 border-b border-borderCol">
+                    <th class="p-4 font-bold">Cliente / Login</th>
+                    <th class="p-4 font-bold">Equipamento (CPE)</th>
+                    <th class="p-4 font-bold">IP / MAC</th>
+                    <th class="p-4 font-bold text-center">Status Rede</th>
+                    <th class="p-4 font-bold text-center">Financeiro</th>
+                    <th class="p-4 font-bold text-right">Ações</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm divide-y divide-gray-800">
+                {% for cliente in clientes %}
+                <tr class="hover:bg-gray-800/30 transition-colors group">
+                    <td class="p-4">
+                        <div class="font-bold text-white">{{ cliente.nome }}</div>
+                        <div class="text-xs text-gray-500 font-mono">
+                            <i class="fa-solid fa-user-lock mr-1"></i>{{ cliente.pppoe_user }}
+                        </div>
+                    </td>
+
+                    <td class="p-4">
+                        {% with router=cliente.equipamentos.first %}
+                            {% if router %}
+                                <div class="text-gray-300">{{ router.modelo }}</div>
+                                <div class="text-[10px] text-gray-500">{{ router.get_tipo_display }}</div>
+                            {% else %}
+                                <span class="text-gray-600 italic">Sem equipamento</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+
+                    <td class="p-4 font-mono text-xs text-gray-400">
+                        {% with router=cliente.equipamentos.first %}
+                            {% if router %}
+                                <div>{{ router.ip_atual|default:"--" }}</div>
+                                <div class="text-[10px] opacity-60">{{ router.mac_address }}</div>
+                            {% else %}
+                                --
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+
+                    <td class="p-4 text-center">
+                        {% with router=cliente.equipamentos.first %}
+                            {% if router.online %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/30 text-neonGreen border border-green-900">
+                                    <span class="w-1.5 h-1.5 bg-neonGreen rounded-full mr-1.5 animate-pulse"></span> Online
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-700/30 text-gray-400 border border-gray-700">
+                                    Offline
+                                </span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+
+                    <td class="p-4 text-center">
+                        {% if cliente.is_blocked %}
+                            <span class="px-2 py-1 rounded text-[10px] font-bold uppercase bg-red-900/20 text-alertRed border border-red-900">
+                                <i class="fa-solid fa-ban mr-1"></i> Bloqueado
+                            </span>
+                        {% else %}
+                            <span class="px-2 py-1 rounded text-[10px] font-bold uppercase bg-blue-900/20 text-blue-400 border border-blue-900">
+                                Ativo
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="p-4 text-right space-x-2">
+                        <a href="{% url 'devices:detalhe_cliente' cliente.id %}" 
+                        class="text-gray-400 hover:text-white transition-colors p-2" 
+                        title="Ver Detalhes Técnicos">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                        
+                        {% if cliente.is_blocked %}
+                            <button onclick="toggleBloqueio({{ cliente.id }}, 'liberar')" 
+                                    class="text-green-500 hover:text-green-400 transition-colors p-2 border border-transparent hover:border-green-500/30 rounded" 
+                                    title="Desbloquear Cliente">
+                                <i class="fa-solid fa-unlock"></i>
+                            </button>
+                        {% else %}
+                            <button onclick="toggleBloqueio({{ cliente.id }}, 'bloquear')" 
+                                    class="text-red-500 hover:text-red-400 transition-colors p-2 border border-transparent hover:border-red-500/30 rounded" 
+                                    title="Bloquear Cliente">
+                                <i class="fa-solid fa-lock"></i>
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-gray-500">
+                        <i class="fa-solid fa-ghost text-4xl mb-3 opacity-20"></i>
+                        <p>Nenhum assinante encontrado.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="p-4 border-t border-borderCol flex justify-between items-center text-xs text-gray-500">
+        <span>Mostrando {{ clientes|length }} registros</span>
+        <div class="flex gap-2">
+            <button class="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 disabled:opacity-50" disabled>Anterior</button>
+            <button class="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700">Próxima</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Função AJAX para bloquear sem recarregar a página
+    function toggleBloqueio(clienteId, acao) {
+        if(!confirm(`Tem certeza que deseja ${acao} este cliente?`)) return;
+
+        // URL deve ser montada dinamicamente, aqui é um exemplo
+        // O ideal é usar {% url 'devices:bloquear_cliente' 0 %} e substituir o 0 pelo JS
+        
+        fetch(`/devices/bloquear/${clienteId}/`, {
+            method: 'POST', // ou GET se configurou assim pra simplificar agora
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status) {
+                alert(data.status);
+                location.reload(); // Recarrega para atualizar o ícone
+            } else {
+                alert("Erro: " + data.error);
+            }
+        })
+        .catch(error => console.error('Erro:', error));
+    }
+</script>
+
+{% endblock %}

@@ -1,15 +1,18 @@
 import csv
 from .forms import NovoUsuarioForm, ChamadoForm, ComentarioForm
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from .models import *
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.db.models import Avg, F, DurationField, ExpressionWrapper, Q
+from devices.models import EquipamentoCliente, Cliente
+
 
 @login_required
 def home(request):
@@ -17,28 +20,34 @@ def home(request):
     if not request.user.is_superuser:
         return redirect('painel_agente')
 
-    # --- CARDS DE DADOS (Códigos que já existiam) ---
+    # --- MÉTRICAS DE HELPDESK (JÁ EXISTENTES) ---
     total_agentes = Agente.objects.count()
     agentes_online = Agente.objects.filter(status='online').count()
-    total_aps = AccessPoint.objects.count()
+    total_aps = AccessPoint.objects.count() # APs da infraestrutura interna
     aps_offline = AccessPoint.objects.filter(status='offline').count()
     incidentes_criticos = SecurityLog.objects.filter(severidade='critica', status=False).count()
     
-    # --- CÁLCULO DAS MÉTRICAS REAIS (NOVO) ---
+    # --- NOVAS MÉTRICAS DE ISP (ROTEADORES DOS CLIENTES) ---
+    # Contagem total de ONUs/Roteadores instalados em clientes
+    total_roteadores_clientes = EquipamentoCliente.objects.count()
     
-    # 1. TMA (Tempo Médio de Atendimento)
+    # Quantos desses estão respondendo (Online)
+    roteadores_online_clientes = EquipamentoCliente.objects.filter(online=True).count()
+    
+    # Clientes inadimplentes/bloqueados no Mikrotik
+    clientes_bloqueados = Cliente.objects.filter(is_blocked=True).count()
+
+    # --- CÁLCULO TMA/TME (HELPDESK) ---
     tma_calc = Chamado.objects.filter(status='concluido', data_inicio_atendimento__isnull=False).aggregate(
         media=Avg(F('data_conclusao') - F('data_inicio_atendimento'))
     )
     tma_valor = tma_calc['media']
 
-    # 2. TME (Tempo Médio de Espera)
     tme_calc = Chamado.objects.filter(data_inicio_atendimento__isnull=False).aggregate(
         media=Avg(F('data_inicio_atendimento') - F('data_abertura'))
     )
     tme_valor = tme_calc['media']
 
-    # --- FUNÇÃO AUXILIAR DE FORMATAÇÃO (O CÓDIGO QUE VOCÊ PERGUNTOU) ---
     def formatar_delta(delta):
         if not delta: return "00:00:00"
         total_seconds = int(delta.total_seconds())
@@ -46,7 +55,7 @@ def home(request):
         minutes, seconds = divmod(remainder, 60)
         return f"{hours:02}:{minutes:02}:{seconds:02}"
 
-    # --- GRÁFICO ---
+    # --- GRÁFICOS ---
     historico = HistoricoOperacao.objects.all().order_by('-data_hora')[:10]
     historico = reversed(historico)
     labels_hora = []
@@ -59,22 +68,29 @@ def home(request):
     
     # --- CONTEXTO FINAL ---
     contexto = {
+        # Helpdesk
         'total_agentes': total_agentes,
         'agentes_online': agentes_online,
         'total_aps': total_aps,
         'aps_offline': aps_offline,
         'incidentes_criticos': incidentes_criticos,
+        
+        # ISP / Clientes (NOVOS DADOS)
+        'total_roteadores_clientes': total_roteadores_clientes,
+        'roteadores_online_clientes': roteadores_online_clientes,
+        'clientes_bloqueados': clientes_bloqueados,
+
+        # Métricas
+        'tma_real': formatar_delta(tma_valor),
+        'tme_real': formatar_delta(tme_valor),
+        
+        # Gráficos
         'chart_labels': labels_hora,
         'chart_chamadas': dados_chamadas,
         'chart_rede': dados_rede,
-        
-        # AQUI ENTRAM AS NOVAS VARIÁVEIS FORMATADAS
-        'tma_real': formatar_delta(tma_valor),
-        'tme_real': formatar_delta(tme_valor),
     }
     
     return render(request, 'home.html', contexto)
-
 def conectividade(request):
     status_filter = request.GET.get('status', '') # Ex: ?status=offline
     
@@ -389,3 +405,71 @@ def lista_usuarios(request):
         'clientes': clientes
     }
     return render(request, 'usuarios_list.html', contexto)
+
+def widget_atendimento(request):
+    """
+    View pública para o Widget do Cliente.
+    Não exige login (usa CPF para identificar).
+    """
+    step = 1 # Passo 1: Identificação, Passo 2: Chat
+    cliente_identificado = None
+    mensagem_erro = None
+    
+    if request.method == 'POST':
+        acao = request.POST.get('acao')
+        
+        # --- FASE 1: IDENTIFICAÇÃO ---
+        if acao == 'identificar':
+            cpf = request.POST.get('cpf_login')
+            # Remove pontos e traços para busca
+            # (Adicione logica de limpeza de string se necessario)
+            
+            try:
+                # Busca o cliente no banco do ISP
+                cliente = Cliente.objects.get(cpf=cpf)
+                
+                # Sucesso: Avança para o chat
+                step = 2
+                cliente_identificado = cliente
+                
+            except Cliente.DoesNotExist:
+                mensagem_erro = "CPF não encontrado na nossa base."
+
+        # --- FASE 2: ABRIR O CHAMADO ---
+        elif acao == 'abrir_chamado':
+            cliente_id = request.POST.get('cliente_id')
+            assunto = request.POST.get('assunto')
+            mensagem = request.POST.get('mensagem')
+            
+            # Busca o cliente
+            cliente = Cliente.objects.get(id=cliente_id)
+            
+            # Garante usuário genérico
+            usuario_web, created = User.objects.get_or_create(username='cliente_via_site')
+            
+            # Cria o Ticket
+            novo_ticket = Chamado.objects.create(
+                titulo=f"Via Widget: {assunto}",
+                descricao=mensagem,
+                solicitante=usuario_web,
+                
+                cliente_isp_id=cliente.id,
+                # ----------------------------------------------
+                
+                status='aberto',
+                categoria='wifi',
+                prioridade='normal'
+            )
+            
+            return JsonResponse({
+                'success': True, 
+                'ticket_id': novo_ticket.id,
+                'message': 'Solicitação recebida com sucesso!'
+            })
+
+    context = {
+        'step': step,
+        'cliente': cliente_identificado,
+        'erro': mensagem_erro
+    }
+    return render(request, 'widget.html', context)

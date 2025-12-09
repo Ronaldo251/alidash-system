@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
 {% block title %}Gestão de Usuários{% endblock %}
+
 {% block content %}
     
-    <div class="flex justify-between items-center mb-6">
+    <div class="mb-6">
         <h2 class="text-xl font-bold text-white">Gestão de Cadastros</h2>
-        
-        <a href="{% url 'criar_usuario' %}" class="bg-neonBlue text-dark px-4 py-2 rounded text-xs font-bold hover:bg-white transition-colors">
-            <i class="fa-solid fa-user-plus mr-2"></i>Novo Colaborador
-        </a>
+        <p class="text-xs text-gray-500">Administração de usuários internos e assinantes externos</p>
     </div>
 
     <div class="mb-6 border-b border-borderCol flex gap-6">
@@ -19,96 +17,116 @@
         </button>
     </div>
 
-    <div id="tab-colaboradores" class="tab-content bg-card rounded-lg border border-borderCol overflow-hidden">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-[#111318] text-gray-500 text-xs uppercase">
-                <tr>
-                    <th class="p-4">Nome / Login</th>
-                    <th>Cargo</th>
-                    <th>Ramal</th>
-                    <th>Status Atual</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-borderCol text-gray-300">
-                {% for perfil in colaboradores %}
-                <tr class="hover:bg-white/5 transition-colors">
-                    <td class="p-4">
-                        <div class="font-bold text-white">{{ perfil.nome }}</div>
-                        <div class="text-[10px] text-gray-500">@{{ perfil.user.username }}</div>
-                    </td>
-                    <td>
-                        {% if perfil.user.is_superuser %}
-                            <span class="text-neonBlue border border-neonBlue/30 bg-blue-900/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Admin</span>
-                        {% else %}
-                            <span class="text-gray-400 border border-gray-600 bg-gray-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Agente</span>
-                        {% endif %}
-                    </td>
-                    <td class="font-mono text-xs">{{ perfil.ramal }}</td>
-                    <td>
-                        <span class="px-2 py-0.5 rounded text-[10px] border {{ perfil.cor_badge_css }}">
-                            {{ perfil.get_status_display }}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="text-gray-500 hover:text-white" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="p-8 text-center text-gray-500">Nenhum colaborador cadastrado.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div id="tab-colaboradores" class="tab-content">
+        
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-300">Colaboradores do Sistema</h3>
+            <a href="{% url 'criar_usuario' %}" class="bg-neonGreen text-black px-4 py-2 rounded text-xs font-bold hover:bg-green-400 transition-colors shadow-lg shadow-green-900/20">
+                <i class="fa-solid fa-user-plus mr-2"></i>Novo Colaborador
+            </a>
+        </div>
+
+        <div class="bg-card rounded-lg border border-borderCol overflow-hidden">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-[#111318] text-gray-500 text-xs uppercase">
+                    <tr>
+                        <th class="p-4">Nome / Login</th>
+                        <th>Cargo</th>
+                        <th>Ramal</th>
+                        <th>Status Atual</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-borderCol text-gray-300">
+                    {% for perfil in colaboradores %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="p-4">
+                            <div class="font-bold text-white">{{ perfil.nome }}</div>
+                            <div class="text-[10px] text-gray-500">@{{ perfil.user.username }}</div>
+                        </td>
+                        <td>
+                            {% if perfil.user.is_superuser %}
+                                <span class="text-neonBlue border border-neonBlue/30 bg-blue-900/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Admin</span>
+                            {% else %}
+                                <span class="text-gray-400 border border-gray-600 bg-gray-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Agente</span>
+                            {% endif %}
+                        </td>
+                        <td class="font-mono text-xs">{{ perfil.ramal }}</td>
+                        <td>
+                            <span class="px-2 py-0.5 rounded text-[10px] border {{ perfil.cor_badge_css }}">
+                                {{ perfil.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="text-gray-500 hover:text-white" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="p-8 text-center text-gray-500">Nenhum colaborador cadastrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div id="tab-clientes" class="tab-content hidden bg-card rounded-lg border border-borderCol overflow-hidden">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-[#111318] text-gray-500 text-xs uppercase">
-                <tr>
-                    <th class="p-4">Cliente / Empresa</th>
-                    <th>CPF</th>
-                    <th>Contato</th>
-                    <th>Chamados</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-borderCol text-gray-300">
-                {% for cliente in clientes %}
-                <tr class="hover:bg-white/5 transition-colors">
-                    <td class="p-4">
-                        <div class="font-bold text-white">{{ cliente.nome }}</div>
-                        {% if cliente.empresa %}
-                            <div class="text-[10px] text-gray-500"><i class="fa-solid fa-building mr-1"></i>{{ cliente.empresa }}</div>
-                        {% endif %}
-                    </td>
-                    <td class="font-mono text-xs">{{ cliente.cpf }}</td>
-                    <td>
-                        <div class="flex flex-col gap-1">
-                            {% if cliente.email %}
-                                <span class="text-[10px] text-gray-400"><i class="fa-solid fa-envelope mr-1"></i>{{ cliente.email }}</span>
+    <div id="tab-clientes" class="tab-content hidden">
+        
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-300">Assinantes & Clientes</h3>
+            <a href="{% url 'devices:novo_cliente' %}" class="bg-neonBlue text-white px-4 py-2 rounded text-xs font-bold hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/20">
+                <i class="fa-solid fa-wifi mr-2"></i>Novo Assinante ISP
+            </a>
+        </div>
+
+        <div class="bg-card rounded-lg border border-borderCol overflow-hidden">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-[#111318] text-gray-500 text-xs uppercase">
+                    <tr>
+                        <th class="p-4">Cliente / Empresa</th>
+                        <th>CPF</th>
+                        <th>Contato</th>
+                        <th>Chamados</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-borderCol text-gray-300">
+                    {% for cliente in clientes %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="p-4">
+                            <div class="font-bold text-white">{{ cliente.nome }}</div>
+                            {% if cliente.empresa %}
+                                <div class="text-[10px] text-gray-500"><i class="fa-solid fa-building mr-1"></i>{{ cliente.empresa }}</div>
                             {% endif %}
-                            {% if cliente.telefone %}
-                                <span class="text-[10px] text-green-400"><i class="fa-brands fa-whatsapp mr-1"></i>{{ cliente.telefone }}</span>
-                            {% endif %}
-                            {% if not cliente.email and not cliente.telefone %}
-                                <span class="text-[10px] text-gray-600">-</span>
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td>
-                        <span class="bg-[#0d1117] border border-borderCol px-2 py-1 rounded text-xs font-bold text-white">
-                            {{ cliente.chamado_set.count }} Tickets
-                        </span>
-                    </td>
-                    <td>
-                        <button class="text-gray-500 hover:text-white" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="5" class="p-8 text-center text-gray-500">Nenhum cliente cadastrado via tickets ainda.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                        <td class="font-mono text-xs">{{ cliente.cpf }}</td>
+                        <td>
+                            <div class="flex flex-col gap-1">
+                                {% if cliente.email %}
+                                    <span class="text-[10px] text-gray-400"><i class="fa-solid fa-envelope mr-1"></i>{{ cliente.email }}</span>
+                                {% endif %}
+                                {% if cliente.telefone %}
+                                    <span class="text-[10px] text-green-400"><i class="fa-brands fa-whatsapp mr-1"></i>{{ cliente.telefone }}</span>
+                                {% endif %}
+                                {% if not cliente.email and not cliente.telefone %}
+                                    <span class="text-[10px] text-gray-600">-</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="bg-[#0d1117] border border-borderCol px-2 py-1 rounded text-xs font-bold text-white">
+                                {{ cliente.chamado_set.count }} Tickets
+                            </span>
+                        </td>
+                        <td>
+                            <button class="text-gray-500 hover:text-white" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="p-8 text-center text-gray-500">Nenhum cliente cadastrado ainda.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>

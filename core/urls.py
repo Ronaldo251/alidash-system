@@ -29,4 +29,5 @@ urlpatterns = [
     path('api/notificacoes/limpar/', api.marcar_como_lida),
     path('api/chamados/listar/', api.listar_chamados_dinamico, name='api_listar_chamados'),
     path('chamados/historico/', views.historico_chamados, name='historico_chamados'),
+    path('suporte-online/', views.widget_atendimento, name='widget_cliente'),
 ]

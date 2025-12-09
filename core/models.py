@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
+from devices.models import Cliente
+
 DEPARTAMENTO_CHOICES = [
     ('comercial', 'Comercial'),
     ('administrativo', 'Administrativo'),
@@ -24,7 +26,6 @@ class Agente(models.Model):
     def __str__(self):
         return f"{self.nome} ({self.ramal})"
 
-    # Lógica Visual: Define a cor do CSS baseada no status direto no banco
     @property
     def cor_badge_css(self):
         cores = {
@@ -47,10 +48,9 @@ class AccessPoint(models.Model):
     ip_address = models.GenericIPAddressField(protocol='IPv4')
     status = models.CharField(max_length=20, choices=STATUS_AP, default='online')
     
-    # Métricas de Performance
     usuarios_conectados = models.IntegerField(default=0)
     cpu_usage = models.IntegerField(default=10, help_text="Uso em %")
-    memory_usage = models.IntegerField(default=30, help_text="Uso em %") # Novo campo!
+    memory_usage = models.IntegerField(default=30, help_text="Uso em %") 
     
     def __str__(self):
         return f"{self.nome} - {self.localizacao}"
@@ -101,7 +101,7 @@ class HistoricoOperacao(models.Model):
     trafego_rede_mbps = models.IntegerField(default=0, help_text="Uso em Mbps")
 
     class Meta:
-        ordering = ['data_hora'] # Garante que o gráfico siga a ordem cronológica
+        ordering = ['data_hora'] 
         verbose_name = "Histórico de Operação"
         verbose_name_plural = "Histórico de Operações"
 
@@ -110,7 +110,7 @@ class HistoricoOperacao(models.Model):
 
 class Cliente(models.Model):
     nome = models.CharField(max_length=100)
-    cpf = models.CharField(max_length=14, unique=True) # Vamos usar como chave de busca
+    cpf = models.CharField(max_length=14, unique=True)
     telefone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     empresa = models.CharField(max_length=100, blank=True)
@@ -138,20 +138,39 @@ class Chamado(models.Model):
         ('site', 'Widget do Site'),
     ]
 
+    CATEGORIA_CHOICES = [
+        ('queda', 'Queda de Conexão'),
+        ('lentidao', 'Internet Lenta'),
+        ('wifi', 'Problema no Wi-Fi'),
+        ('financeiro', 'Financeiro / Boleto'),
+        ('outros', 'Outros'),
+    ]
+
+    PRIORIDADE_CHOICES = [
+        ('baixa', 'Baixa'),
+        ('normal', 'Normal'),
+        ('alta', 'Alta'),
+    ]
+
+    prioridade = models.CharField(max_length=10, choices=PRIORIDADE_CHOICES, default='normal')
+    categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, default='outros')
     titulo = models.CharField(max_length=100)
     descricao = models.TextField(verbose_name="Descrição Detalhada")
     departamento = models.CharField(max_length=20, choices=DEPARTAMENTO_CHOICES, default='tecnico')
     
-    # Quem pediu? (Geralmente o Agente)
     solicitante = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+  
+    cliente_isp = models.ForeignKey(
+        'devices.Cliente', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='chamados_isp',
+        verbose_name="Assinante Vinculado"
+    )
     
-    # NOVO: Vínculo com Cliente Externo
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
-    
-    # NOVO: Saber de onde veio
     origem = models.CharField(max_length=10, choices=ORIGEM_CHOICES, default='interno')
     
-    # Quem vai resolver? (Pode ser nulo no começo)
     atribuido_a = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='chamados_atribuidos')
     
     data_inicio_atendimento = models.DateTimeField(null=True, blank=True, help_text="Momento que o agente assumiu")
@@ -188,7 +207,7 @@ class Notificacao(models.Model):
     destinatario = models.ForeignKey(User, on_delete=models.CASCADE)
     titulo = models.CharField(max_length=100)
     mensagem = models.TextField()
-    link = models.CharField(max_length=200, blank=True, null=True) # Para onde vai ao clicar
+    link = models.CharField(max_length=200, blank=True, null=True) 
     lida = models.BooleanField(default=False)
     data = models.DateTimeField(auto_now_add=True)
 

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Novo Cliente ISP{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-card p-8 rounded-lg border border-borderCol">
+    <h2 class="text-2xl font-bold text-white mb-6">Cadastrar Novo Assinante</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="space-y-4">
+            {% for field in form %}
+            <div>
+                <label class="block text-gray-400 text-sm font-bold mb-2">{{ field.label }}</label>
+                {{ field }}
+            </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="mt-6 w-full bg-neonBlue hover:bg-blue-600 text-white font-bold py-3 rounded transition-colors">
+            Salvar Cliente
+        </button>
+    </form>
+</div>
+{% endblock %}

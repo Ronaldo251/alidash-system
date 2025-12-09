@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from .models import Agente, Chamado, Comentario, DEPARTAMENTO_CHOICES
+from devices.models import Cliente
 
 class NovoUsuarioForm(forms.ModelForm):
     username = forms.CharField(label="Usuário (Login)", widget=forms.TextInput(attrs={'class': 'w-full bg-dark border border-borderCol text-white text-sm rounded p-2 focus:border-neonBlue focus:outline-none'}))
@@ -66,13 +67,22 @@ class NovoUsuarioForm(forms.ModelForm):
 class ChamadoForm(forms.ModelForm):
     class Meta:
         model = Chamado
-        fields = ['titulo', 'prioridade', 'descricao','departamento']
+        fields = ['titulo', 'cliente_isp', 'descricao', 'prioridade', 'categoria']
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'w-full bg-dark border border-borderCol text-white p-2 rounded focus:border-neonBlue outline-none'}),
             'departamento': forms.Select(attrs={'class': 'w-full bg-dark border border-borderCol text-white p-2 rounded focus:border-neonBlue outline-none'}),
             'prioridade': forms.Select(attrs={'class': 'w-full bg-dark border border-borderCol text-white p-2 rounded focus:border-neonBlue outline-none'}),
             'descricao': forms.Textarea(attrs={'class': 'w-full bg-dark border border-borderCol text-white p-2 rounded focus:border-neonBlue outline-none', 'rows': 4}),
         }
+    def __init__(self, *args, **kwargs):
+        super(ChamadoForm, self).__init__(*args, **kwargs)
+        # Estilização para ficar escuro (Tailwind Style)
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({
+                'class': 'bg-gray-800 border border-gray-600 text-white text-sm rounded-lg focus:ring-neonBlue focus:border-neonBlue block w-full p-2.5'
+            })
+        # O campo de cliente pode ser um select pesquisável no futuro, por enquanto é Select padrão
+        self.fields['cliente_isp'].empty_label = "Selecione um Assinante (Opcional)"
 
 class ComentarioForm(forms.ModelForm):
     class Meta:

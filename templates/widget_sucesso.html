@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Aberto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 h-screen flex justify-center items-center">
+
+    <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm border-t-4 border-green-500">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 text-3xl">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Solicitação Recebida!</h2>
+        <p class="text-gray-600 text-sm mb-6">Recebemos sua mensagem. Um de nossos técnicos analisará seu caso em instantes.</p>
+        
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+            <p class="text-xs text-gray-500 uppercase font-bold">Protocolo</p>
+            <p class="text-xl font-mono font-bold text-gray-800">#{{ ticket.id }}</p>
+        </div>
+
+        <a href="{% url 'widget_cliente' %}" class="block w-full bg-gray-800 text-white py-3 rounded-lg font-bold text-sm hover:bg-gray-900">
+            Voltar ao Início
+        </a>
+    </div>
+
+</body>
+</html>

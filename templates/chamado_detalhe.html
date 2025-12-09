@@ -1,273 +1,169 @@
 {% extends 'base.html' %}
-{% block title %}Chamado #{{ chamado.id }}{% endblock %}
+
+{% block title %}Ticket #{{ chamado.id }} - {{ chamado.titulo }}{% endblock %}
 
 {% block content %}
-    <div class="flex justify-between items-start mb-6">
-        <div>
-            <a href="{% url 'lista_chamados' %}" class="text-xs text-gray-500 hover:text-white uppercase mb-2 inline-block">
-                <i class="fa-solid fa-arrow-left"></i> Voltar
-            </a>
-            <h1 class="text-2xl font-bold text-white flex items-center gap-3">
-                {{ chamado.titulo }}
-                <span class="text-xs px-2 py-1 rounded border {{ chamado.cor_badge }}">
+
+<div class="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)]">
+    
+    <div class="flex-1 flex flex-col bg-card rounded-lg border border-borderCol overflow-hidden">
+        
+        <div class="p-4 border-b border-borderCol flex justify-between items-center bg-[#111318]">
+            <div>
+                <span class="text-xs text-gray-500 font-mono">#{{ chamado.id }}</span>
+                <h2 class="text-xl font-bold text-white">{{ chamado.titulo }}</h2>
+            </div>
+            <div class="flex gap-2">
+                {% if chamado.prioridade == 'alta' %}
+                    <span class="px-2 py-1 bg-red-900/30 text-alertRed text-xs border border-red-900 rounded font-bold">ALTA</span>
+                {% else %}
+                    <span class="px-2 py-1 bg-blue-900/30 text-blue-400 text-xs border border-blue-900 rounded font-bold">NORMAL</span>
+                {% endif %}
+                
+                <span class="px-2 py-1 bg-gray-800 text-gray-300 text-xs border border-gray-600 rounded uppercase">
                     {{ chamado.get_status_display }}
                 </span>
-            </h1>
-            <p class="text-sm text-gray-400 mt-1">
-                Aberto por <strong class="text-white">{{ chamado.solicitante.username }}</strong> 
-                em {{ chamado.data_abertura|date:"d/m/Y H:i" }}
-            </p>
+            </div>
         </div>
 
-        <form method="post" class="flex gap-2">
-            {% csrf_token %}
-            <input type="hidden" name="btn_status" value="1">
-            
-            {% if chamado.status != 'concluido' %}
-                <button type="submit" name="novo_status" value="concluido" class="bg-green-900/20 text-green-400 border border-green-900 px-4 py-2 rounded text-xs font-bold hover:bg-green-900/40 transition-colors">
-                    <i class="fa-solid fa-check mr-2"></i>Concluir Chamado
-                </button>
-            {% else %}
-                <button type="submit" name="novo_status" value="andamento" class="bg-card text-gray-400 border border-borderCol px-4 py-2 rounded text-xs font-bold hover:text-white transition-colors">
-                    Reabrir Chamado
-                </button>
-            {% endif %}
-            
-            {% if request.user.is_superuser and chamado.status == 'aberto' %}
-                <button type="submit" name="novo_status" value="andamento" class="bg-blue-900/20 text-neonBlue border border-blue-900 px-4 py-2 rounded text-xs font-bold hover:bg-blue-900/40 transition-colors">
-                    Assumir Chamado
-                </button>
-            {% endif %}
-        </form>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <div class="space-y-4"> 
-            
-            <div class="bg-card border border-borderCol rounded-lg p-6 h-fit">
-                <h3 class="text-xs font-bold text-gray-500 uppercase mb-4 border-b border-borderCol pb-2">Detalhes da Solicitação</h3>
-                <div class="mb-4">
-                    <p class="text-[10px] text-gray-500 uppercase">Prioridade</p>
-                    <p class="text-white font-bold">{{ chamado.get_prioridade_display }}</p>
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0d1117]" id="chat-area">
+            <div class="flex gap-3">
+                <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-white">
+                    {{ chamado.solicitante.username|slice:":2"|upper }}
                 </div>
-                <div class="mb-4">
-                    <p class="text-[10px] text-gray-500 uppercase">Descrição</p>
-                    <div class="text-sm text-gray-300 mt-1 leading-relaxed bg-[#0b0c10] p-3 rounded border border-borderCol">
-                        {{ chamado.descricao|linebreaks }}
+                <div class="bg-gray-800 p-3 rounded-r-lg rounded-bl-lg max-w-[80%] border border-gray-700">
+                    <div class="flex justify-between text-[10px] text-gray-400 mb-1">
+                        <span>{{ chamado.solicitante.username }}</span>
+                        <span>{{ chamado.data_abertura|date:"d/m H:i" }}</span>
                     </div>
+                    <p class="text-sm text-gray-200">{{ chamado.descricao }}</p>
                 </div>
             </div>
 
-            <div class="bg-card border border-borderCol rounded-lg p-6 h-fit">
-                
-                <div class="flex justify-between items-end border-b border-borderCol pb-2 mb-4">
-                    <h3 class="text-xs font-bold text-gray-500 uppercase">
-                        <i class="fa-solid fa-address-card mr-2"></i>Dados do Cliente
-                    </h3>
-                    
-                    <div class="text-right">
-                        <p class="text-[9px] text-gray-500 uppercase leading-none mb-1">Duração</p>
-                        <p class="text-base font-mono font-bold text-green-400 leading-none">
-                            <i class="fa-solid fa-stopwatch mr-1 text-xs"></i>{{ duracao_atendimento }}
-                        </p>
+            {% for comentario in comentarios %}
+                <div class="flex gap-3 {% if comentario.autor == request.user %}flex-row-reverse{% endif %}">
+                    <div class="w-8 h-8 rounded-full {% if comentario.autor.is_superuser %}bg-neonBlue{% else %}bg-gray-700{% endif %} flex items-center justify-center text-xs font-bold text-white">
+                        {{ comentario.autor.username|slice:":2"|upper }}
+                    </div>
+                    <div class="p-3 rounded-lg max-w-[80%] border {% if comentario.autor == request.user %}bg-blue-900/20 border-blue-900 text-right{% else %}bg-gray-800 border-gray-700{% endif %}">
+                        <div class="flex justify-between text-[10px] text-gray-400 mb-1 gap-4">
+                            <span>{{ comentario.autor.username }}</span>
+                            <span>{{ comentario.data|date:"H:i" }}</span>
+                        </div>
+                        <p class="text-sm text-gray-200">{{ comentario.texto }}</p>
                     </div>
                 </div>
-
-                <div class="space-y-3">
-                    {% if chamado.cliente %}
-                        <div>
-                            <p class="text-[10px] text-gray-500 uppercase">Nome Completo</p>
-                            <p class="text-white font-bold">{{ chamado.cliente.nome }}</p>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <p class="text-[10px] text-gray-500 uppercase">CPF</p>
-                                <p class="text-sm font-mono text-gray-300">{{ chamado.cliente.cpf }}</p>
-                            </div>
-                            <div>
-                                <p class="text-[10px] text-gray-500 uppercase">Empresa</p>
-                                <p class="text-sm text-gray-300">{{ chamado.cliente.empresa|default:"-" }}</p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <p class="text-[10px] text-gray-500 uppercase">Contato</p>
-                            <div class="flex flex-col gap-1 mt-1">
-                                {% if chamado.cliente.email %}
-                                    <a href="mailto:{{ chamado.cliente.email }}" class="text-xs text-neonBlue hover:underline flex items-center gap-2">
-                                        <i class="fa-solid fa-envelope"></i> {{ chamado.cliente.email }}
-                                    </a>
-                                {% endif %}
-                                {% if chamado.cliente.telefone %}
-                                    <a href="#" class="text-xs text-green-400 hover:underline flex items-center gap-2">
-                                        <i class="fa-brands fa-whatsapp"></i> {{ chamado.cliente.telefone }}
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-4 opacity-50">
-                            <i class="fa-solid fa-user-shield text-4xl mb-2 text-gray-600"></i>
-                            <p class="text-sm">Chamado Interno</p>
-                            <p class="text-xs font-bold text-white mt-1">{{ chamado.solicitante.username }}</p>
-                            <p class="text-[10px] text-gray-500">Agente/Admin</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
+            {% endfor %}
         </div>
 
-        <div class="lg:col-span-2 flex flex-col h-[600px] bg-card border border-borderCol rounded-lg overflow-hidden">
-            
-            <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-6 bg-[#0d1117]">
-                
-                <div class="text-center">
-                    <span class="text-[10px] text-gray-600 bg-card px-3 py-1 rounded-full border border-borderCol">
-                        Chamado criado em {{ chamado.data_abertura|date:"d/m/Y" }}
-                    </span>
-                </div>
-
-                {% for msg in comentarios %}
-                    <div class="flex flex-col {% if msg.autor == request.user %}items-end{% else %}items-start{% endif %}">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-xs font-bold {% if msg.autor.is_superuser %}text-neonBlue{% else %}text-gray-400{% endif %}">
-                                {{ msg.autor.username }} {% if msg.autor.is_superuser %}(Admin){% endif %}
-                            </span>
-                            <span class="text-[10px] text-gray-600">{{ msg.data|date:"H:i" }}</span>
-                        </div>
-                        <div class="max-w-[80%] p-3 rounded-lg text-sm 
-                            {% if msg.autor == request.user %}
-                                bg-blue-900/20 border border-blue-900/50 text-white rounded-tr-none
-                            {% else %}
-                                bg-[#161b22] border border-borderCol text-gray-300 rounded-tl-none
-                            {% endif %}">
-                            {{ msg.texto|linebreaksbr }}
-                        </div>
-                    </div>
-                {% empty %}
-                    <div class="text-center py-10 opacity-30">
-                        <i class="fa-solid fa-comments text-4xl mb-2"></i>
-                        <p class="text-sm">Nenhuma interação ainda.</p>
-                    </div>
-                {% endfor %}
-            </div>
-
-            {% if chamado.status != 'concluido' %}
-            <div class="p-4 bg-card border-t border-borderCol">
-                <form method="post" class="flex gap-4 items-start">
-                    {% csrf_token %}
-                    <input type="hidden" name="btn_comentario" value="1">
-                    
-                    <div class="flex-1">
-                        {{ form.texto }}
-                    </div>
-                    <button type="submit" class="bg-neonBlue text-dark h-12 w-12 rounded flex items-center justify-center hover:bg-white transition-colors">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                </form>
-            </div>
-            {% else %}
-            <div class="p-4 bg-red-900/10 border-t border-red-900/30 text-center text-red-400 text-sm">
-                <i class="fa-solid fa-lock mr-2"></i> Este chamado está encerrado. Reabra para comentar.
-            </div>
-            {% endif %}
+        <div class="p-4 bg-card border-t border-borderCol">
+            <form method="POST" class="flex gap-2">
+                {% csrf_token %}
+                <input type="text" name="texto" required placeholder="Digite sua resposta..." 
+                       class="flex-1 bg-gray-900 border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-neonBlue transition-colors">
+                <button type="submit" name="btn_comentario" class="bg-neonBlue hover:bg-blue-600 text-white px-6 rounded-lg font-bold">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
         </div>
     </div>
-    
-    <script>
-        // 1. Configurações Iniciais
-        const chatContainer = document.getElementById('chat-container');
-        const chamadoId = "{{ chamado.id }}";
-        const usuarioLogado = "{{ request.user.username }}"; 
+
+    <div class="w-full lg:w-80 flex flex-col gap-4">
         
-        // Rola para o final ao abrir
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        <div class="bg-card rounded-lg border border-borderCol p-4">
+            <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">Assinante Vinculado</h3>
+            
+            {% if chamado.cliente_isp %}
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded bg-gray-800 flex items-center justify-center text-xl text-gray-400">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div>
+                        <a href="{% url 'devices:detalhe_cliente' chamado.cliente_isp.id %}" class="font-bold text-white hover:text-neonBlue hover:underline text-sm block">
+                            {{ chamado.cliente_isp.nome }}
+                        </a>
+                        <span class="text-xs text-gray-500">{{ chamado.cliente_isp.cpf }}</span>
+                    </div>
+                </div>
 
-        // 2. Função de Polling (Atualização)
-        function atualizarChat() {
-            fetch(`/api/chat/${chamadoId}/mensagens/`)
-                .then(response => {
-                    if (!response.ok) throw new Error("Erro na rede");
-                    return response.json();
-                })
-                .then(data => {
-                    const container = document.getElementById('chat-container');
+                <div class="bg-gray-900/50 p-3 rounded border border-gray-800">
+                    <p class="text-[10px] text-gray-400 uppercase font-bold mb-2">Status da Conexão</p>
                     
-                    // Se estiver vazio
-                    if (data.mensagens.length === 0) {
-                        if (!container.innerHTML.includes('Nenhuma interação')) {
-                            container.innerHTML = `<div class="text-center py-10 opacity-30"><i class="fa-solid fa-comments text-4xl mb-2"></i><p class="text-sm">Nenhuma interação ainda.</p></div>`;
-                        }
-                        return;
-                    }
-
-                    // Redesenha mensagens (Estratégia simples: limpa e recria)
-                    // Para apps maiores, usaríamos React/Vue para não piscar a tela, mas aqui ok.
-                    let htmlFinal = `
-                        <div class="text-center mb-4">
-                            <span class="text-[10px] text-gray-600 bg-card px-3 py-1 rounded-full border border-borderCol">
-                                Histórico atualizado
-                            </span>
-                        </div>
-                    `;
-
-                    data.mensagens.forEach(msg => {
-                        const souEu = (msg.autor === usuarioLogado);
-                        const ehCliente = !msg.eh_agente; // Se não é agente, é cliente
-
-                        let alinhamento = souEu ? 'items-end' : 'items-start';
-                        let corFundo, borda, corTextoAutor;
-
-                        if (souEu) {
-                            // Minhas mensagens (Agente Logado) -> Direita / Azul
-                            corFundo = 'bg-blue-900/20 text-white rounded-tr-none';
-                            borda = 'border border-blue-900/50';
-                            corTextoAutor = 'text-neonBlue';
-                        } else if (ehCliente) {
-                            // Cliente Externo -> Esquerda / Cinza Escuro (Destaque)
-                            corFundo = 'bg-slate-700 text-white rounded-tl-none';
-                            borda = 'border border-slate-600';
-                            corTextoAutor = 'text-green-400';
-                        } else {
-                            // Outro Agente -> Esquerda / Preto
-                            corFundo = 'bg-[#161b22] text-gray-300 rounded-tl-none';
-                            borda = 'border border-borderCol';
-                            corTextoAutor = 'text-gray-400';
-                        }
-
-                        // Constrói o HTML da mensagem
-                        htmlFinal += `
-                            <div class="flex flex-col ${alinhamento} mb-4">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-xs font-bold ${corTextoAutor}">
-                                        ${msg.autor}
+                    {% with router=chamado.cliente_isp.equipamentos.first %}
+                        {% if router %}
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs text-gray-300">Equipamento:</span>
+                                {% if router.online %}
+                                    <span class="text-xs text-neonGreen font-bold flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-neonGreen animate-pulse"></span> Online
                                     </span>
-                                    <span class="text-[10px] text-gray-600">${msg.data}</span>
-                                </div>
-                                <div class="max-w-[80%] p-3 rounded-lg text-sm ${corFundo} ${borda}">
-                                    ${msg.texto.replace(/\n/g, '<br>')}
-                                </div>
+                                {% else %}
+                                    <span class="text-xs text-alertRed font-bold flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-alertRed"></span> Offline
+                                    </span>
+                                {% endif %}
                             </div>
-                        `;
-                    });
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs text-gray-300">Sinal:</span>
+                                <span class="text-xs font-mono text-white">{{ router.ultimo_sinal }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-300">IP:</span>
+                                <span class="text-[10px] font-mono text-gray-500">{{ router.ip_atual }}</span>
+                            </div>
+                        {% else %}
+                            <span class="text-xs text-yellow-500">Sem equipamento cadastrado.</span>
+                        {% endif %}
+                    {% endwith %}
+                </div>
 
-                    // Só atualiza o DOM se houver mudança (para evitar flickering/piscar)
-                    // Truque: compara tamanho ou hash, mas aqui vamos substituir direto
-                    container.innerHTML = htmlFinal;
-                    
-                    // Auto-scroll se o usuário já estiver lá embaixo (para não atrapalhar leitura)
-                    // Se a diferença entre scroll e total for pequena, desce.
-                    if (container.scrollHeight - container.scrollTop - container.clientHeight < 300) {
-                        container.scrollTop = container.scrollHeight;
-                    }
-                })
-                .catch(err => console.error("Erro no chat:", err));
-        }
+                {% if chamado.cliente_isp.is_blocked %}
+                    <div class="mt-3 p-2 bg-red-900/20 border border-red-900 rounded text-center">
+                        <span class="text-xs text-alertRed font-bold uppercase"><i class="fa-solid fa-ban mr-1"></i> Cliente Bloqueado</span>
+                    </div>
+                {% endif %}
 
-        // 3. Inicia o loop a cada 3 segundos
-        setInterval(atualizarChat, 3000);
-    </script>
+            {% else %}
+                <div class="text-center py-4 text-gray-600">
+                    <i class="fa-solid fa-link-slash text-2xl mb-2"></i>
+                    <p class="text-xs">Nenhum assinante vinculado a este ticket.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="bg-card rounded-lg border border-borderCol p-4">
+            <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">SLA & Controle</h3>
+            
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-xs text-gray-400">Tempo Decorrido:</span>
+                <span class="text-lg font-mono font-bold text-white">{{ duracao_atendimento }}</span>
+            </div>
+
+            <form method="POST" class="space-y-2">
+                {% csrf_token %}
+                {% if chamado.status == 'aberto' %}
+                    <button type="submit" name="btn_status" value="andamento" class="w-full py-2 bg-neonBlue/10 border border-neonBlue text-neonBlue rounded text-xs font-bold hover:bg-neonBlue hover:text-white transition-all">
+                        <i class="fa-solid fa-play mr-2"></i> INICIAR ATENDIMENTO
+                    </button>
+                {% elif chamado.status == 'andamento' %}
+                    <button type="submit" name="btn_status" value="concluido" class="w-full py-2 bg-green-900/20 border border-green-600 text-green-500 rounded text-xs font-bold hover:bg-green-600 hover:text-white transition-all">
+                        <i class="fa-solid fa-check mr-2"></i> CONCLUIR CHAMADO
+                    </button>
+                {% else %}
+                    <div class="text-center text-xs text-green-500 font-bold border border-green-900 bg-green-900/10 py-2 rounded">
+                        CHAMADO FINALIZADO
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Scroll automático para o fim do chat ao carregar
+    const chatArea = document.getElementById('chat-area');
+    chatArea.scrollTop = chatArea.scrollHeight;
+</script>
+
 {% endblock %}
