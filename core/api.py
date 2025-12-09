@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import Chamado, Cliente, Comentario, Notificacao
@@ -270,7 +270,7 @@ def listar_chamados_dinamico(request):
         dados.append({
             "id": c.id,
             "titulo": c.titulo,
-            "solicitante": c.cliente.nome if c.cliente else c.solicitante.username,
+            "solicitante": c.cliente_isp.nome if c.cliente_isp else c.solicitante.username,
             "origem_icone": c.icone_origem,
             "prioridade": c.get_prioridade_display(),
             "status": c.get_status_display(),
@@ -282,3 +282,27 @@ def listar_chamados_dinamico(request):
         })
         
     return Response(dados)
+
+@api_view(['GET'])
+@permission_classes([AllowAny]) # Permite acesso público (o cliente do site)
+def listar_comentarios_chat(request, chamado_id):
+    chamado = get_object_or_404(Chamado, id=chamado_id)
+    
+    # Pega todos os comentários ordenados por data
+    comentarios = chamado.comentarios.all().order_by('data')
+    
+    data = []
+    for c in comentarios:
+        # Define quem está falando para pintar o balão certo no JS
+        # Se for superuser ou staff, é o Agente.
+        is_staff = c.autor.is_superuser or c.autor.is_staff
+        
+        data.append({
+            "id": c.id,
+            "texto": c.texto,
+            "autor": c.autor.first_name or c.autor.username, # Nome bonito
+            "is_staff": is_staff, 
+            "hora": c.data.strftime("%H:%M")
+        })
+        
+    return Response(data)

@@ -149,8 +149,8 @@
     </div>
 
     <script>
-        // Variável para guardar o texto da mensagem enquanto troca de tela
-        let userMessage = "";
+        let ticketId = null; // Guarda o ID do ticket aberto
+        let lastMessageId = 0; // Para saber quais mensagens são novas
 
         function toggleChat() {
             const chat = document.getElementById('chat-window');
@@ -167,17 +167,14 @@
         if (form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
-
-                // 1. UI: Botão Carregando
                 const btn = document.getElementById('btnEnviar');
                 const originalText = btn.innerHTML;
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
 
-                // 2. Salva a mensagem para usar no chat depois
-                userMessage = document.getElementById('msgInput').value;
+                // Salva msg visualmente
+                window.userMessageTemp = document.getElementById('msgInput').value;
 
-                // 3. Envia
                 const formData = new FormData(form);
                 fetch('', {
                     method: 'POST',
@@ -187,63 +184,74 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // 4. Troca de Tela: Form -> Sucesso
-                        document.getElementById('screen-form').classList.add('hidden-force'); // Esconde Form
-                        document.getElementById('screen-success').classList.remove('hidden-force'); // Mostra Sucesso
-                        
-                        document.getElementById('protocolo-display').innerText = '#' + data.ticket_id;
+                        ticketId = data.ticket_id; // SALVA O ID DO TICKET
+                        document.getElementById('screen-form').classList.add('hidden-force');
+                        document.getElementById('screen-success').classList.remove('hidden-force');
+                        document.getElementById('protocolo-display').innerText = '#' + ticketId;
                     } else {
                         alert('Erro ao enviar.');
                         btn.disabled = false;
                         btn.innerHTML = originalText;
                     }
-                })
-                .catch(error => {
-                    console.error(error);
-                    alert('Erro de conexão.');
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
                 });
             });
         }
 
         function goToChat() {
-            // 1. Esconde Sucesso, Mostra Chat
             document.getElementById('screen-success').classList.add('hidden-force');
             document.getElementById('screen-chat').classList.remove('hidden-force');
 
             const chatArea = document.getElementById('chat-messages');
-
-            // 2. Injeta a mensagem do usuário (Balão Verde / Direita)
-            const userBubble = `
+            
+            // Adiciona a primeira mensagem do usuário visualmente
+            chatArea.innerHTML += `
                 <div class="flex justify-end fade-in">
                     <div class="bg-[#dcf8c6] text-gray-800 p-2 rounded-lg rounded-tr-none shadow max-w-[80%] text-sm">
-                        ${userMessage}
-                        <div class="text-[10px] text-gray-500 text-right mt-1 flex items-center justify-end gap-1">
-                            ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            <i class="fa-solid fa-check-double text-blue-500"></i>
-                        </div>
+                        ${window.userMessageTemp}
+                        <div class="text-[10px] text-gray-500 text-right mt-1"><i class="fa-solid fa-check"></i></div>
                     </div>
                 </div>
             `;
-            chatArea.innerHTML += userBubble;
 
-            // 3. Simula resposta automática do sistema (Balão Branco / Esquerda)
-            setTimeout(() => {
-                const sysBubble = `
-                    <div class="flex justify-start fade-in">
-                        <div class="bg-white text-gray-800 p-2 rounded-lg rounded-tl-none shadow max-w-[80%] text-sm">
-                            <strong>Atendente Virtual:</strong><br>
-                            Recebemos sua solicitação. Um analista humano entrará na conversa em breve. Por favor, aguarde.
-                            <div class="text-[10px] text-gray-400 text-right mt-1">
-                                ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                chatArea.innerHTML += sysBubble;
-                chatArea.scrollTop = chatArea.scrollHeight; // Rola para baixo
-            }, 1000);
+            // INICIA O POLLING (Busca novas mensagens a cada 3 segundos)
+            setInterval(buscarNovasMensagens, 3000);
+        }
+
+        function buscarNovasMensagens() {
+            if (!ticketId) return;
+
+            // Você precisará criar essa rota no Django ou usar uma existente
+            // Exemplo: /api/chamados/123/comentarios/
+            fetch(`/api/chamados/${ticketId}/comentarios/`) 
+            .then(r => r.json())
+            .then(msgs => {
+                const chatArea = document.getElementById('chat-messages');
+                let scrollNeeded = false;
+
+                msgs.forEach(msg => {
+                    // Se for mensagem NOVA e NÃO for do próprio cliente (via site)
+                    if (msg.id > lastMessageId) {
+                        lastMessageId = msg.id;
+                        
+                        // Se for mensagem do AGENTE (Staff)
+                        if (msg.is_staff) { 
+                            const bubble = `
+                                <div class="flex justify-start fade-in mb-3">
+                                    <div class="bg-white text-gray-800 p-2 rounded-lg rounded-tl-none shadow max-w-[80%] text-sm">
+                                        <strong>${msg.autor}:</strong><br>
+                                        ${msg.texto}
+                                        <div class="text-[10px] text-gray-400 text-right mt-1">${msg.hora}</div>
+                                    </div>
+                                </div>
+                            `;
+                            chatArea.innerHTML += bubble;
+                            scrollNeeded = true;
+                        }
+                    }
+                });
+
+                if (scrollNeeded) chatArea.scrollTop = chatArea.scrollHeight;
+            });
         }
     </script>
 
